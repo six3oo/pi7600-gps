@@ -342,7 +342,7 @@ def parse_sms(sms_buffer: str) -> list:
                     "message_type": message[1],
                     "message_originating_address": message[2],
                     "message_destination_address": message[3],
-                    "message_date": message[4][1:],
+                    "message_date": message[3][1:],
                     "message_time": message[5][:-1],
                     "message_contents": read_messages[
                         i + 1
