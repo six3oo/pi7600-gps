@@ -321,7 +321,7 @@ class GPS:
             return await self.get_gps_position()  # Await the async recursive call
 
 
-def parse_sms(sms_buffer: str) -> list:
+def parse_sms(sms_buffer: str) -> list: # TODO: new line in message content breaks this so cannot split by \r\n
     """
     Parses the modem sms buffer into a list of dictionaries
     :param sms_buffer: str
