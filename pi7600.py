@@ -321,7 +321,7 @@ class GPS:
             return await self.get_gps_position()  # Await the async recursive call
 
 
-def parse_sms(sms_buffer: str) -> list: # TODO: new line in message content breaks this so cannot split by \r\n
+def parse_sms(sms_buffer: str) -> list: # TODO: message_list to dict, use orig address as key, list of dicts that has a list of dicts
     """
     Parses the modem sms buffer into a list of dictionaries
     :param sms_buffer: str
@@ -333,6 +333,8 @@ def parse_sms(sms_buffer: str) -> list: # TODO: new line in message content brea
     message_list = []
     for msg in read_messages:
         msg_header = msg[:msg.find("\r\n")].replace('"', '').split(",")
+        msg_contents = msg[msg.find("\r\n"):][2:]
+        msg_contents = msg_contents[:-2] if msg_contents.endswith("\r\n") else msg_contents
         message_list.append(
                 {
                     "message_index": msg_header[0],
@@ -341,7 +343,7 @@ def parse_sms(sms_buffer: str) -> list: # TODO: new line in message content brea
                     "message_destination_address": msg_header[3],
                     "message_date": msg_header[4],
                     "message_time": msg_header[5],
-                    "message_contents": msg[msg.find("\r\n"):]
+                    "message_contents": msg_contents
                 }
         )
     return message_list
