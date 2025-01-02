@@ -332,7 +332,7 @@ def parse_sms(sms_buffer: str) -> list: # TODO: new line in message content brea
     
     message_list = []
     for msg in read_messages:
-        msg_header = msg[:msg.find("\r\n")].split(",")
+        msg_header = msg[:msg.find("\r\n")].replace('"', '').split(",")
         message_list.append(
                 {
                     "message_index": msg_header[0],
