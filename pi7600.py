@@ -327,28 +327,23 @@ def parse_sms(sms_buffer: str) -> list: # TODO: new line in message content brea
     :param sms_buffer: str
     :return: list<dict>
     """
-    read_messages = sms_buffer.split("\r\n")
-    read_messages = read_messages[
-        1:-3
-    ]  # first and last few values are just cmd and resp code
+    read_messages = sms_buffer[sms_buffer.find("+CMGL"):sms_buffer.rfind("\r\n\r\nOK\r\n")]
+    read_messages = read_messages.split("+CMGL: ")[1:]
+    
     message_list = []
-
-    for i, v in enumerate(read_messages):
-        if not i & 1:  # Even idx has msg info, odd is msg content for preceding idx
-            message = v.replace('"', "", 9).split(",")
-            message_list.append(
+    for msg in read_messages:
+        msg_header = msg[:msg.find("\r\n")].split(",")
+        message_list.append(
                 {
-                    "message_index": message[0][message[0].rfind(" ") + 1 :],
-                    "message_type": message[1],
-                    "message_originating_address": message[2],
-                    "message_destination_address": message[3],
-                    "message_date": message[3][1:],
-                    "message_time": message[5][:-1],
-                    "message_contents": read_messages[
-                        i + 1
-                    ],  # idx + 1 is always message content
+                    "message_index": msg_header[0],
+                    "message_type": msg_header[1],
+                    "message_originating_address": msg_header[2],
+                    "message_destination_address": msg_header[3],
+                    "message_date": msg_header[4],
+                    "message_time": msg_header[5],
+                    "message_contents": msg[msg.find("\r\n"):]
                 }
-            )
+        )
     return message_list
 
 
