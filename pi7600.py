@@ -338,7 +338,7 @@ def parse_sms(sms_buffer: str) -> list: # TODO: message_list to dict, use orig a
         msg_contents = msg_contents[:-2] if msg_contents.endswith("\r\n") else msg_contents
         msg_time = msg_header[5][:-3]
         raw_datetime = f"{msg_header[4]} {msg_time}"
-        parsed_datetime = datetime.strptime(raw_datetime, "%d/%m/%y %H:%M:%S")
+        parsed_datetime = datetime.strptime(raw_datetime, "%y/%m/%d %H:%M:%S")
         formatted_date = parsed_datetime.strftime("%Y-%m-%d")
         formatted_time = parsed_datetime.strftime("%H:%M:%S")
         message_list.append(
