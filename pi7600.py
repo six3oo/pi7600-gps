@@ -342,7 +342,7 @@ def parse_sms(sms_buffer: str) -> list: # TODO: message_list to dict, use orig a
                     "message_originating_address": msg_header[2],
                     "message_destination_address": msg_header[3],
                     "message_date": msg_header[4],
-                    "message_time": msg_header[5],
+                    "message_time": msg_header[5][:-3],
                     "message_contents": msg_contents
                 }
         )
