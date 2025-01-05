@@ -73,6 +73,13 @@ def messages_from_db(db: Session):
     messages_pydantic = [Messages.from_orm(msg) for msg in messages_db]
     return messages_pydantic
 
+def messages_to_delete(db: Session):
+    messages_db = db.query(MessageCreate).all()
+    messages_delete = [msg.message_index for msg in messages_db]
+    for msg in messages_delete:
+        logger.info(f"Deleting message at idx: {msg.message_index}")
+        sms.delete_message(msg_idx=msg.message_index)
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -261,6 +268,13 @@ async def delete_msg(msg_idx: int) -> dict:
     logger.info(f"DELETED_SMS: {msg_idx}")
     resp = await sms.delete_message(msg_idx)  # Await the async delete_message call
     return resp
+
+@app.delete("/sms/cleanup/", status=status.HTTP_202_ACCEPTED)
+async def clear_sim_memory(db: Session = Depends(get_db)) -> dict:
+    logger.info("Clearing sim sms memory")
+    messages_to_delete(db=db)
+    return
+
 
 
 @app.post("/sms", status_code=status.HTTP_201_CREATED)
