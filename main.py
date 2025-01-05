@@ -39,6 +39,14 @@ def get_db():
     finally:
         db.close()
 
+def create_message(db: Session, message: Messages):
+    db_message - Message(**message.dict())
+    db.add(db_message)
+    db.commit()
+    db.refresh(db_message)
+
+
+
 # Database Model
 
 class Message(Base):
@@ -217,6 +225,7 @@ async def sms_root(msg_query: str = "ALL") -> List[Messages]:
         try:
             message = Messages(**raw_msg)
             messages.append(message)
+            create_message(db=get_db, message=message)
         except ValidationError as e:
             print(f"Validation error: {e}")
             continue
