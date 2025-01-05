@@ -207,7 +207,7 @@ async def info() -> InfoResponse:
 
 
 @app.get("/sms", response_model=List[Messages], status_code=status.HTTP_200_OK)
-async def sms_root(msg_query: str = "ALL") -> List[Messages]:
+async def sms_root(msg_query: str = "ALL", db: Session = Depends(get_db)) -> List[Messages]:
     """Read messages from modem
     Args:
         msg_query (str, optional): ["ALL", "REC READ", "REC UNREAD", "STO UNSENT", "STO SENT"]. Defaults to "ALL".
@@ -225,7 +225,7 @@ async def sms_root(msg_query: str = "ALL") -> List[Messages]:
         try:
             message = Messages(**raw_msg)
             messages.append(message)
-            create_message(db=get_db, message=message)
+            create_message(db=db, message=message)
         except ValidationError as e:
             print(f"Validation error: {e}")
             continue
