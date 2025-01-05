@@ -66,7 +66,7 @@ class Messages(BaseModel):
     message_contents: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class InfoResponse(BaseModel):
