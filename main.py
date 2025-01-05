@@ -44,7 +44,7 @@ def get_db():
 # Database Model
 
 
-class Messages(Base):
+class MessageCreate(Base):
     __tablename__ = "messages"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -57,8 +57,8 @@ class Messages(Base):
     message_contents = Column(String, nullable=False)
 
 
-def create_message(db: Session, message: Messages):
-    db_message = Messages(**message.dict())
+def create_message(db: Session, message: MessageCreate):
+    db_message = MessageCreate(**message.dict())
     db.add(db_message)
     db.commit()
     db.refresh(db_message)
