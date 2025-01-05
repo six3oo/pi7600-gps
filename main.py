@@ -234,6 +234,7 @@ async def sms_root(
     for raw_msg in raw_messages:
         try:
             message = Messages(**raw_msg)
+            message['in_sim_memory'] = True
             messages.append(message)
             create_message(db=db, message=message)
         except ValidationError as e:
