@@ -75,7 +75,7 @@ async def messages_from_db(db: Session):
 
 async def messages_to_delete(db: Session):
     messages_db = db.query(MessageCreate).filter(MessageCreate.in_sim_memory == True)
-    messages_delete = [msg.message_index for msg in messages_db]
+    messages_delete = [MessageCreate for msg in messages_db]
     for msg in messages_delete:
         logger.info(f"Deleting message at idx: {msg.message_index}")
         sms.delete_message(msg_idx=int(msg.message_index))
