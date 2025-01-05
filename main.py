@@ -56,7 +56,12 @@ class MessageCreate(Base):
 
 
 def create_message(db: Session, message: MessageCreate):
-    logger.info("Commiting messages to database")
+    existing_message = db.query(Messages).filter(Messages.message_contents == message.message_contents).first()
+    existing_idx = db.query(Messages).filter(Messages.message_index == message.message_index).first()
+    if existing_message and existing_idx:
+        logger.info("Message exists, skipping...")
+        return
+    logger.info("Commiting message to database")
     db_message = MessageCreate(**message.dict())
     db.add(db_message)
     db.commit()
