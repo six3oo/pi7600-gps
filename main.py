@@ -6,7 +6,7 @@ import os
 import asyncio
 import subprocess
 from typing import List, Optional
-from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy import Column, Integer, String, Boolean, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from fastapi import FastAPI, status, Depends
@@ -53,7 +53,7 @@ class MessageCreate(Base):
     message_date = Column(String, nullable=False)
     message_time = Column(String, nullable=False)
     message_contents = Column(String, nullable=False)
-    in_sim_memory = Column(bool, nullable=True)
+    in_sim_memory = Column(Boolean, nullable=True)
 
 
 def create_message(db: Session, message: MessageCreate):
