@@ -289,7 +289,7 @@ async def delete_msg(msg_idx: int) -> dict:
 async def clear_sim_memory(db: Session = Depends(get_db)) -> dict:
     logger.info("Clearing sim sms memory")
     await messages_to_delete(db=db)
-    return
+    return {"response": "Ok"}
 
 
 
