@@ -45,7 +45,7 @@ def get_db():
 class MessageCreate(Base):
     __tablename__ = "messages"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     message_index = Column(String, nullable=False)
     message_type = Column(String, nullable=False)
     message_originating_address = Column(String, nullable=True)
@@ -111,7 +111,7 @@ Base.metadata.create_all(bind=engine)
 
 
 class Messages(BaseModel):
-    id: Optional[int]
+    id: Optional[int] = None
     message_index: str
     message_type: str
     message_originating_address: Optional[str]
