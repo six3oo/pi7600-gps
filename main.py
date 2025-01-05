@@ -78,7 +78,7 @@ async def messages_to_delete(db: Session):
     messages_delete = [msg.message_index for msg in messages_db]
     for msg in messages_delete:
         logger.info(f"Deleting message at idx: {msg.message_index}")
-        sms.delete_message(msg_idx=msg.message_index)
+        sms.delete_message(msg_idx=int(msg.message_index))
         msg.in_sim_memory = False
         db.commit()
         db.refresh()
