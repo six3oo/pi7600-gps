@@ -59,7 +59,7 @@ class MessageCreate(Base):
 async def create_message(db: Session, message: MessageCreate):
     existing_message = (
         db.query(MessageCreate)
-        .filter(MessageCreate.message_contents == message.message_contents, MessageCreate.message_index == message.message_index)
+        .filter(MessageCreate.message_contents == message.message_contents, MessageCreate.message_index == message.message_index, MessageCreate.in_sim_memory == message.in_sim_memory)
         .first()
     )
     if existing_message:
