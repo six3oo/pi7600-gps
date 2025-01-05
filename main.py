@@ -102,7 +102,6 @@ async def delete_db_message(db: Session, msg_idx: int):
             await sms.delete_message(msg_idx=msg_idx)
         db.delete(message_db)
         db.commit()
-        db.refresh(message_db)
         logger.info(f"Message id: {msg_idx} deleted")
     return
 
