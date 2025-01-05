@@ -100,7 +100,7 @@ Base.metadata.create_all(bind=engine)
 
 
 class Messages(BaseModel):
-    id: int
+    id: Optional[int]
     message_index: str
     message_type: str
     message_originating_address: Optional[str]
