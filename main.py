@@ -39,17 +39,9 @@ def get_db():
     finally:
         db.close()
 
-def create_message(db: Session, message: Messages):
-    db_message - Message(**message.dict())
-    db.add(db_message)
-    db.commit()
-    db.refresh(db_message)
-
-
-
 # Database Model
 
-class Message(Base):
+class Messages(Base):
     __tablename__ = "messages"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -61,7 +53,12 @@ class Message(Base):
     message_time = Column(String, nullable=False)
     message_contents = Column(String, nullable=False)
 
-    
+def create_message(db: Session, message: Messages):
+    db_message - Message(**message.dict())
+    db.add(db_message)
+    db.commit()
+    db.refresh(db_message)
+ 
 
 
 class Messages(BaseModel):
