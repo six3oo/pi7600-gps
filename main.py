@@ -53,6 +53,7 @@ class MessageCreate(Base):
     message_date = Column(String, nullable=False)
     message_time = Column(String, nullable=False)
     message_contents = Column(String, nullable=False)
+    in_sim_memory = Column(bool, nullable=True)
 
 
 def create_message(db: Session, message: MessageCreate):
