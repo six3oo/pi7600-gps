@@ -61,7 +61,7 @@ async def create_message(db: Session, message: MessageCreate):
     existing_idx = db.query(MessageCreate).filter(MessageCreate.message_index == message.message_index).first()
     if existing_message and existing_idx:
         logger.info("Message exists, updating...")
-        await delete_db_message(db=db, msg_idx=existing_idx)
+        await delete_db_message(db=db, msg_idx=int(message.id))
     logger.info("Commiting message to database")
     db_message = MessageCreate(**message.dict())
     db.add(db_message)
