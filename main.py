@@ -33,6 +33,7 @@ Base = declarative_base()
 
 
 def get_db():
+    logger.info("Staring database session")
     db = SessionLocal()
     try:
         yield db
@@ -55,6 +56,7 @@ class MessageCreate(Base):
 
 
 def create_message(db: Session, message: MessageCreate):
+    logger.info("Commiting messages to database")
     db_message = MessageCreate(**message.dict())
     db.add(db_message)
     db.commit()
