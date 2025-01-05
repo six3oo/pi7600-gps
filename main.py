@@ -9,7 +9,7 @@ from typing import List, Optional
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from fastapi import FastAPI, status
+from fastapi import FastAPI, status, Depends
 from pydantic import BaseModel, ValidationError
 from pi7600 import GPS, SMS, TIMEOUT, Settings
 
