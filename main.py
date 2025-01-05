@@ -245,7 +245,7 @@ async def sms_root(
         except ValidationError as e:
             print(f"Validation error: {e}")
             continue
-    return messages_from_db()
+    return messages_from_db(db=db)
 
 
 @app.delete("/sms/delete/{msg_idx}", status_code=status.HTTP_202_ACCEPTED)
