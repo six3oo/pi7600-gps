@@ -30,7 +30,6 @@ DATABASE_URL = "sqlite:///./cmgl.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
-Base.metadata.create_all(bind=engine)
 
 
 def get_db():
@@ -42,8 +41,6 @@ def get_db():
 
 
 # Database Model
-
-
 class MessageCreate(Base):
     __tablename__ = "messages"
 
@@ -62,6 +59,9 @@ def create_message(db: Session, message: MessageCreate):
     db.add(db_message)
     db.commit()
     db.refresh(db_message)
+
+
+Base.metadata.create_all(bind=engine)
 
 
 class Messages(BaseModel):
@@ -207,7 +207,9 @@ async def info() -> InfoResponse:
 
 
 @app.get("/sms", response_model=List[Messages], status_code=status.HTTP_200_OK)
-async def sms_root(msg_query: str = "ALL", db: Session = Depends(get_db)) -> List[Messages]:
+async def sms_root(
+    msg_query: str = "ALL", db: Session = Depends(get_db)
+) -> List[Messages]:
     """Read messages from modem
     Args:
         msg_query (str, optional): ["ALL", "REC READ", "REC UNREAD", "STO UNSENT", "STO SENT"]. Defaults to "ALL".
