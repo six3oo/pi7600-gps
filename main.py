@@ -6,10 +6,11 @@ import os
 import asyncio
 import subprocess
 from typing import List, Optional
-
+from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
 from fastapi import FastAPI, status
 from pydantic import BaseModel, ValidationError
-
 from pi7600 import GPS, SMS, TIMEOUT, Settings
 
 # Integrate into uvicorn logger
@@ -24,6 +25,36 @@ settings = Settings()
 
 logger.info("Sim modules ready")
 
+# Database
+DATABASE_URL = "sqlite:///./cmgl.db"
+engine = create_engine(DATABASE_URL, connect_args="check_same_thread": False)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+Base.metadata.create_all(bind=engine)
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# Database Model
+
+class Message(Base):
+    __tablename__ = "messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    message_index = Column(String, nullable=False)
+    message_type = Column(String, nullable=False)
+    message_originating_address = Column(String, nullable=True)
+    message_destination_address = Column(String, nullable=True)
+    message_date = Column(String, nullable=False)
+    message_time = Column(String, nullable=False)
+    message_contents = Column(String, nullable=False)
+
+    
+
 
 class Messages(BaseModel):
     message_index: str
@@ -33,6 +64,9 @@ class Messages(BaseModel):
     message_date: str
     message_time: str
     message_contents: str
+
+    class Config:
+        orm_mode = True
 
 
 class InfoResponse(BaseModel):
