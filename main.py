@@ -74,8 +74,7 @@ async def messages_from_db(db: Session):
     return messages_pydantic
 
 async def messages_to_delete(db: Session):
-    messages_db = db.query(MessageCreate).filter(MessageCreate.in_sim_memory == True).all()
-    messages_delete = [MessageCreate for msg in messages_db]
+    messages_delete = db.query(MessageCreate).filter(MessageCreate.in_sim_memory == True).all()
     for msg in messages_delete:
         logger.info(f"Deleting message at idx: {msg.message_index}")
         sms.delete_message(msg_idx=int(msg.message_index))
