@@ -273,7 +273,7 @@ async def delete_msg(msg_idx: int) -> dict:
     resp = await sms.delete_message(msg_idx)  # Await the async delete_message call
     return resp
 
-@app.delete("/sms/cleanup/", status=status.HTTP_202_ACCEPTED)
+@app.delete("/sms/cleanup/", status_code=status.HTTP_202_ACCEPTED)
 async def clear_sim_memory(db: Session = Depends(get_db)) -> dict:
     logger.info("Clearing sim sms memory")
     messages_to_delete(db=db)
