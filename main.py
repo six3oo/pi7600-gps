@@ -57,8 +57,16 @@ class MessageCreate(Base):
 
 
 async def create_message(db: Session, message: MessageCreate):
-    existing_message = db.query(MessageCreate).filter(MessageCreate.message_contents == message.message_contents).first()
-    existing_idx = db.query(MessageCreate).filter(MessageCreate.message_index == message.message_index).first()
+    existing_message = (
+        db.query(MessageCreate)
+        .filter(MessageCreate.message_contents == message.message_contents)
+        .first()
+    )
+    existing_idx = (
+        db.query(MessageCreate)
+        .filter(MessageCreate.message_index == message.message_index)
+        .first()
+    )
     if existing_message and existing_idx:
         logger.info("Message exists, updating...")
         await delete_db_message(db=db, msg_idx=int(message.id))
@@ -68,19 +76,24 @@ async def create_message(db: Session, message: MessageCreate):
     db.commit()
     db.refresh(db_message)
 
+
 async def messages_from_db(db: Session):
     messages_db = db.query(MessageCreate).all()
     messages_pydantic = [Messages.from_orm(msg) for msg in messages_db]
     return messages_pydantic
 
+
 async def messages_to_delete(db: Session):
-    messages_delete = db.query(MessageCreate).filter(MessageCreate.in_sim_memory == True).all()
+    messages_delete = (
+        db.query(MessageCreate).filter(MessageCreate.in_sim_memory == True).all()
+    )
     for msg in messages_delete:
         logger.info(f"Deleting message at idx: {msg.message_index}")
         await sms.delete_message(msg_idx=int(msg.message_index))
         msg.in_sim_memory = False
         db.commit()
         db.refresh(msg)
+
 
 async def delete_db_message(db: Session, msg_idx: int):
     message_db = db.query(MessageCreate).filter(MessageCreate.id == msg_idx).first()
@@ -92,8 +105,6 @@ async def delete_db_message(db: Session, msg_idx: int):
         db.refresh()
         logger.info(f"Message id: {msg_idx} deleted")
     return
-
-
 
 
 Base.metadata.create_all(bind=engine)
@@ -266,7 +277,7 @@ async def sms_root(
             message = Messages(**raw_msg)
             await create_message(db=db, message=message)
         except ValidationError as e:
-            print(f"Validation error: {e}")
+            logger.error(f"Validation error: {e} for raw message: {raw_msg}")
             continue
     return await messages_from_db(db=db)
 
@@ -286,12 +297,12 @@ async def delete_msg(msg_idx: int) -> dict:
     resp = await delete_db_message(msg_idx)
     return resp
 
+
 @app.delete("/sms/cleanup/", status_code=status.HTTP_202_ACCEPTED)
 async def clear_sim_memory(db: Session = Depends(get_db)) -> dict:
     logger.info("Clearing sim sms memory")
     await messages_to_delete(db=db)
     return {"response": "Ok"}
-
 
 
 @app.post("/sms", status_code=status.HTTP_201_CREATED)
