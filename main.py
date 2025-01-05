@@ -291,8 +291,8 @@ async def delete_msg(msg_idx: int, db: Session = Depends(get_db)) -> dict:
     """
     logger.info(f"DELETED_SMS: {msg_idx}")
     # resp = await sms.delete_message(msg_idx)  # Await the async delete_message call
-    resp = await delete_db_message(db=db, msg_idx=msg_idx)
-    return resp
+    await delete_db_message(db=db, msg_idx=msg_idx)
+    return {"response": "Ok"}
 
 
 @app.delete("/sms/cleanup/", status_code=status.HTTP_202_ACCEPTED)
