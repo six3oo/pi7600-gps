@@ -68,6 +68,11 @@ def create_message(db: Session, message: MessageCreate):
     db.commit()
     db.refresh(db_message)
 
+def messages_from_db(db: Session):
+    messages_db = db.query(MessageCreate).all()
+    messages_pydantic = [Messages.from_orm(msg) for msg in messages_db]
+    return messages_pydantic
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -80,6 +85,7 @@ class Messages(BaseModel):
     message_date: str
     message_time: str
     message_contents: str
+    in_sim_memory: bool
 
     class Config:
         from_attributes = True
@@ -229,18 +235,17 @@ async def sms_root(
 
     # Await the receive_message function to ensure async execution
     raw_messages = await sms.receive_message(message_type=msg_query)
-
-    messages = []
     for raw_msg in raw_messages:
         try:
-            messages.append(Messages(**raw_msg))
+            # this should set true for any message read from the sim
+            # since the storage is limited, this can be used to remove later
             raw_msg["in_sim_memory"] = True
             message = Messages(**raw_msg)
             create_message(db=db, message=message)
         except ValidationError as e:
             print(f"Validation error: {e}")
             continue
-    return messages
+    return messages_from_db()
 
 
 @app.delete("/sms/delete/{msg_idx}", status_code=status.HTTP_202_ACCEPTED)
