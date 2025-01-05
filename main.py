@@ -56,8 +56,8 @@ class MessageCreate(Base):
 
 
 def create_message(db: Session, message: MessageCreate):
-    existing_message = db.query(Messages).filter(Messages.message_contents == message.message_contents).first()
-    existing_idx = db.query(Messages).filter(Messages.message_index == message.message_index).first()
+    existing_message = db.query(MessageCreate).filter(MessageCreate.message_contents == message.message_contents).first()
+    existing_idx = db.query(MessageCreate).filter(MessageCreate.message_index == message.message_index).first()
     if existing_message and existing_idx:
         logger.info("Message exists, skipping...")
         return
