@@ -77,10 +77,10 @@ async def messages_to_delete(db: Session):
     messages_delete = db.query(MessageCreate).filter(MessageCreate.in_sim_memory == True).all()
     for msg in messages_delete:
         logger.info(f"Deleting message at idx: {msg.message_index}")
-        sms.delete_message(msg_idx=int(msg.message_index))
+        await sms.delete_message(msg_idx=int(msg.message_index))
         msg.in_sim_memory = False
         db.commit()
-        db.refresh()
+        db.refresh(msg)
 
 async def delete_db_message(db: Session, msg_idx: int):
     message_db = db.query(MessageCreate).filter(MessageCreate.id == msg_idx).first()
