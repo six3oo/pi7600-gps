@@ -69,13 +69,11 @@ async def create_message(db: Session, message: MessageCreate):
         .first()
     )
     if existing_message:
-        if (
-            db.query(MessageCreate)
-            .filter(MessageCreate.in_sim_memory != message.in_sim_memory)
-            .first()
-        ):
+        if existing_message.in_sim_memory != message.in_sim_memory:
             logger.info("Message exists, updating...")
-            await delete_db_message(db=db, msg_idx=int(existing_message.id))
+            existing_message.in_sim_memory = message.in_sim_memory
+            db.commit()
+            db.refresh(existing_message)
         logger.info("Message exists, skipping...")
         return
     if message.message_type == "SENT":
