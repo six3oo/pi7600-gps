@@ -338,7 +338,9 @@ async def send_msg(
     # Await the async send_message call
     current_time = datetime.now()
     msg = Messages(
+        message_index=None,
         message_type="SENT",
+        message_originating_address=None,
         message_destination_address=request.number,
         message_date=current_time.strftime("%Y-%d-%m"),
         message_time=current_time.strftime("%H:%M:%S"),
