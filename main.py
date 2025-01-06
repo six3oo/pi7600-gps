@@ -45,7 +45,7 @@ def get_db():
 class MessageCreate(Base):
     __tablename__ = "messages"
 
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True, nullable=True)
     message_index = Column(String, nullable=False)
     message_type = Column(String, nullable=False)
     message_originating_address = Column(String, nullable=True)
@@ -54,6 +54,7 @@ class MessageCreate(Base):
     message_time = Column(String, nullable=False)
     message_contents = Column(String, nullable=False)
     in_sim_memory = Column(Boolean, nullable=True)
+    is_sent = Column(Boolean, nullable=True)
 
 
 async def create_message(db: Session, message: MessageCreate):
@@ -68,6 +69,11 @@ async def create_message(db: Session, message: MessageCreate):
             await delete_db_message(db=db, msg_idx=int(existing_message.id))
         logger.info("Message exists, skipping...")
         return
+    if message.message_destination_address:
+        logger.info("Checking if message needs to be sent...")
+        if not message.is_sent:
+            logger.info(f"Sending message\n{message.message_destination_address}\n{message.message_contents}")
+            sms.send_message(message.message_destination_address, message.message_contents)  
     logger.info("Commiting message to database")
     db_message = MessageCreate(**message.dict())
     db.add(db_message)
@@ -117,6 +123,7 @@ class Messages(BaseModel):
     message_time: str
     message_contents: str
     in_sim_memory: bool
+    is_sent: Optional[bool]
 
     class Config:
         from_attributes = True
