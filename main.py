@@ -350,8 +350,12 @@ async def send_msg(
         is_sent=False,
     )
     await create_message(db=db, message=msg)
-    msg.is_sent = True
-    return msg
+    db_msg = db.query(MessageCreate).filter(
+        MessageCreate.message_contents == msg.message_contents,
+        MessageCreate.message_date == msg.message_date,
+        MessageCreate.message_time == msg.message_time,
+    ).first()
+    return db_msg
 
 
 @app.post("/at", status_code=status.HTTP_202_ACCEPTED)
