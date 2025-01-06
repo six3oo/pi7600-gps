@@ -11,7 +11,7 @@ from sqlalchemy import Column, Integer, String, Boolean, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from fastapi import FastAPI, status, Depends
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, ConfigDict
 from pi7600 import GPS, SMS, TIMEOUT, Settings
 
 # Integrate into uvicorn logger
@@ -137,8 +137,7 @@ class Messages(BaseModel):
     in_sim_memory: bool
     is_sent: Optional[bool] = False
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class InfoResponse(BaseModel):
@@ -323,7 +322,9 @@ async def clear_sim_memory(db: Session = Depends(get_db)) -> dict:
 
 @app.post("/sms", status_code=status.HTTP_201_CREATED)
 async def send_msg(
-    request: SendMessageRequest, message: MessageCreate, db: Session = Depends(get_db),
+    request: SendMessageRequest,
+    message: MessageCreate,
+    db: Session = Depends(get_db),
 ) -> Messages:
     """POST SMS Message to destination number
 
