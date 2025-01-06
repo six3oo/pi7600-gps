@@ -63,7 +63,8 @@ async def create_message(db: Session, message: MessageCreate):
         db.query(MessageCreate)
         .filter(
             MessageCreate.message_contents == message.message_contents,
-            MessageCreate.message_index == message.message_index,
+            MessageCreate.message_date == message.message_date,
+            MessageCreate.message_time == message.message_time,
         )
         .first()
     )
