@@ -97,7 +97,7 @@ async def create_message(db: Session, message: MessageCreate):
 
 async def messages_from_db(db: Session):
     messages_db = db.query(MessageCreate).all()
-    messages_pydantic = [Messages.from_orm(msg) for msg in messages_db]
+    messages_pydantic = [Messages.model_validate(msg) for msg in messages_db]
     return messages_pydantic
 
 
@@ -137,7 +137,7 @@ class Messages(BaseModel):
     message_time: str
     message_contents: str
     in_sim_memory: bool
-    is_sent: Optional[bool] = False
+    is_sent: Optional[bool]
 
     model_config = ConfigDict(from_attributes=True)
 
