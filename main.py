@@ -87,6 +87,7 @@ async def create_message(db: Session, message: MessageCreate):
             await sms.send_message(
                 message.message_destination_address, message.message_contents
             )
+            message.is_sent = True
     logger.info("Commiting message to database")
     db_message = MessageCreate(**message.dict())
     db.add(db_message)
