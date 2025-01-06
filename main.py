@@ -5,6 +5,7 @@ import logging
 import os
 import asyncio
 import subprocess
+from datetime import datetime
 from typing import List, Optional
 from sqlalchemy import Column, Integer, String, Boolean, create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -45,8 +46,8 @@ def get_db():
 class MessageCreate(Base):
     __tablename__ = "messages"
 
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True, nullable=True)
-    message_index = Column(String, nullable=False)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    message_index = Column(String, nullable=True)
     message_type = Column(String, nullable=False)
     message_originating_address = Column(String, nullable=True)
     message_destination_address = Column(String, nullable=True)
@@ -60,11 +61,18 @@ class MessageCreate(Base):
 async def create_message(db: Session, message: MessageCreate):
     existing_message = (
         db.query(MessageCreate)
-        .filter(MessageCreate.message_contents == message.message_contents, MessageCreate.message_index == message.message_index)
+        .filter(
+            MessageCreate.message_contents == message.message_contents,
+            MessageCreate.message_index == message.message_index,
+        )
         .first()
     )
     if existing_message:
-        if db.query(MessageCreate).filter(MessageCreate.in_sim_memory != message.in_sim_memory).first():
+        if (
+            db.query(MessageCreate)
+            .filter(MessageCreate.in_sim_memory != message.in_sim_memory)
+            .first()
+        ):
             logger.info("Message exists, updating...")
             await delete_db_message(db=db, msg_idx=int(existing_message.id))
         logger.info("Message exists, skipping...")
@@ -72,8 +80,12 @@ async def create_message(db: Session, message: MessageCreate):
     if message.message_destination_address:
         logger.info("Checking if message needs to be sent...")
         if not message.is_sent:
-            logger.info(f"Sending message\n{message.message_destination_address}\n{message.message_contents}")
-            sms.send_message(message.message_destination_address, message.message_contents)  
+            logger.info(
+                f"Sending message\n{message.message_destination_address}\n{message.message_contents}"
+            )
+            await sms.send_message(
+                message.message_destination_address, message.message_contents
+            )
     logger.info("Commiting message to database")
     db_message = MessageCreate(**message.dict())
     db.add(db_message)
@@ -123,7 +135,7 @@ class Messages(BaseModel):
     message_time: str
     message_contents: str
     in_sim_memory: bool
-    is_sent: Optional[bool]
+    is_sent: Optional[bool] = False
 
     class Config:
         from_attributes = True
@@ -310,7 +322,9 @@ async def clear_sim_memory(db: Session = Depends(get_db)) -> dict:
 
 
 @app.post("/sms", status_code=status.HTTP_201_CREATED)
-async def send_msg(request: SendMessageRequest) -> dict:
+async def send_msg(
+    request: SendMessageRequest, message: MessageCreate
+) -> MessageCreate:
     """POST SMS Message to destination number
 
     Args:
@@ -318,13 +332,21 @@ async def send_msg(request: SendMessageRequest) -> dict:
         number (str): sms destination number
 
     Returns:
-        dict: {"response": True}
+        MessageCreate
     """
-    logger.info(f"Sending {request.msg} to {request.number}")
-    resp = await sms.send_message(
-        phone_number=request.number, text_message=request.msg
-    )  # Await the async send_message call
-    return {"response": resp}
+    logger.info("/sms: Received request to send message")
+    # Await the async send_message call
+    current_time = datetime.now()
+    msg = MessageCreate(
+        message_type="SENT",
+        message_destination_address=request.number,
+        message_date=current_time.strftime("%Y-%d-%m"),
+        message_time=current_time.strftime("%H:%M:%S"),
+        message_contents=request.msg,
+        in_sim_memory=False,
+        is_sent=False,
+    )
+    return {"response": "Ok"}
 
 
 @app.post("/at", status_code=status.HTTP_202_ACCEPTED)
