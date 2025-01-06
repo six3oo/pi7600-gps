@@ -78,7 +78,7 @@ async def create_message(db: Session, message: MessageCreate):
             await delete_db_message(db=db, msg_idx=int(existing_message.id))
         logger.info("Message exists, skipping...")
         return
-    if message.message_destination_address and message.message_destination_address != "":
+    if message.message_type == "SENT":
         logger.info("Checking if message needs to be sent...")
         if not message.is_sent:
             logger.info(
