@@ -349,7 +349,7 @@ async def send_msg(
         message_type="SENT",
         message_originating_address=None,
         message_destination_address=request.number,
-        message_date=current_time.strftime("%Y-%d-%m"),
+        message_date=current_time.strftime("%Y-%m-%d"),
         message_time=current_time.strftime("%H:%M:%S"),
         message_contents=request.msg,
         in_sim_memory=False,
