@@ -34,7 +34,7 @@ Base = declarative_base()
 
 
 def get_db():
-    logger.info("Staring database session")
+    logger.info("Starting database session")
     db = SessionLocal()
     try:
         yield db
@@ -47,7 +47,9 @@ class MessageCreate(Base):
     __tablename__ = "messages"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    message_index = Column(String, nullable=True)
+    message_index = Column(
+        String, nullable=True
+    )  # this is the index stored on the modem
     message_type = Column(String, nullable=False)
     message_originating_address = Column(String, nullable=True)
     message_destination_address = Column(String, nullable=True)
@@ -353,12 +355,16 @@ async def send_msg(
         in_sim_memory=False,
         is_sent=False,
     )
-    await create_message(db=db, message=msg)
-    db_msg = db.query(MessageCreate).filter(
-        MessageCreate.message_contents == msg.message_contents,
-        MessageCreate.message_date == msg.message_date,
-        MessageCreate.message_time == msg.message_time,
-    ).first()
+    await create_message(db=db, message=msg)  # TODO: return db message in create_message instead to avoid this next bit
+    db_msg = (
+        db.query(MessageCreate)
+        .filter(
+            MessageCreate.message_contents == msg.message_contents,
+            MessageCreate.message_date == msg.message_date,
+            MessageCreate.message_time == msg.message_time,
+        )
+        .first()
+    )
     return db_msg
 
 
