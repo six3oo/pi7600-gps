@@ -350,7 +350,8 @@ async def send_msg(
         is_sent=False,
     )
     await create_message(db=db, message=msg)
-    return {"response": "Ok"}
+    msg.is_sent = True
+    return msg
 
 
 @app.post("/at", status_code=status.HTTP_202_ACCEPTED)
