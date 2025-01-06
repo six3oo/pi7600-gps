@@ -323,7 +323,6 @@ async def clear_sim_memory(db: Session = Depends(get_db)) -> dict:
 @app.post("/sms", status_code=status.HTTP_201_CREATED)
 async def send_msg(
     request: SendMessageRequest,
-    message: MessageCreate,
     db: Session = Depends(get_db),
 ) -> Messages:
     """POST SMS Message to destination number
