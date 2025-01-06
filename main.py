@@ -137,7 +137,7 @@ class Messages(BaseModel):
     message_time: str
     message_contents: str
     in_sim_memory: bool
-    is_sent: Optional[bool]
+    is_sent: Optional[bool] = None
 
     model_config = ConfigDict(from_attributes=True)
 
