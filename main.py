@@ -275,7 +275,7 @@ async def info() -> InfoResponse:
         arch=arch.strip(),
     )
 
-
+# TODO: Update queries to match PDU 
 @app.get("/sms", response_model=List[Messages], status_code=status.HTTP_200_OK)
 async def sms_root(
     msg_query: str = "ALL", db: Session = Depends(get_db)

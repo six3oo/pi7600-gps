@@ -322,7 +322,7 @@ class GPS:
             return await self.get_gps_position()  # Await the async recursive call
 
 
-def parse_sms(sms_buffer: str) -> list: # TODO: message_list to dict, use orig address as key, list of dicts that has a list of dicts
+def parse_sms(sms_buffer: str) -> list: # TODO: check for PDU and parse PDU. PDU is much more informative than text mode.
     """
     Parses the modem sms buffer into a list of dictionaries
     :param sms_buffer: str
