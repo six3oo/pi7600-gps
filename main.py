@@ -12,7 +12,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from fastapi import FastAPI, status, Depends
 from pydantic import ValidationError
 from pi7600 import GPS, SMS, TIMEOUT, Settings
-from .models import *
+from models import *
 
 # Integrate into uvicorn logger
 logger = logging.getLogger("uvicorn.pi7600")
