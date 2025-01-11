@@ -289,7 +289,7 @@ async def sms_root(db: Session = Depends(get_db)
     logger.info(f"Reading all messages")
 
     # Await the receive_message function to ensure async execution
-    raw_messages = await sms.receive_messages(message_type="4")
+    raw_messages = await sms.receive_messages("4")
     for raw_msg in raw_messages:
         try:
             # this should set true for any message read from the sim
