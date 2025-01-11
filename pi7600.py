@@ -322,36 +322,43 @@ class GPS:
             return await self.get_gps_position()  # Await the async recursive call
 
 
-def parse_sms(sms_buffer: str) -> list: # TODO: check for PDU and parse PDU. PDU is much more informative than text mode.
+def parse_sms(sms_buffer: str, pdu_mode: bool = False) -> list: # TODO: check for PDU and parse PDU. PDU is much more informative than text mode.
     """
     Parses the modem sms buffer into a list of dictionaries
     :param sms_buffer: str
     :return: list<dict>
     """
-    read_messages = sms_buffer[sms_buffer.find("+CMGL"):sms_buffer.rfind("\r\n\r\nOK\r\n")]
-    read_messages = read_messages.split("+CMGL: ")[1:]
-    
-    message_list = []
-    for msg in read_messages:
-        msg_header = msg[:msg.find("\r\n")].replace('"', '').split(",")
-        msg_contents = msg[msg.find("\r\n"):][2:]
-        msg_contents = msg_contents[:-2] if msg_contents.endswith("\r\n") else msg_contents
-        msg_time = msg_header[5][:-3]
-        raw_datetime = f"{msg_header[4]} {msg_time}"
-        parsed_datetime = datetime.strptime(raw_datetime, "%y/%m/%d %H:%M:%S")
-        formatted_date = parsed_datetime.strftime("%Y-%m-%d")
-        formatted_time = parsed_datetime.strftime("%H:%M:%S")
-        message_list.append(
-                {
-                    "message_index": msg_header[0],
-                    "message_type": msg_header[1],
-                    "message_originating_address": msg_header[2],
-                    "message_destination_address": msg_header[3],
-                    "message_date": formatted_date,
-                    "message_time": formatted_time,
-                    "message_contents": msg_contents
-                }
-        )
+    if not pdu_mode:
+        try:
+            read_messages = sms_buffer[sms_buffer.find("+CMGL"):sms_buffer.rfind("\r\n\r\nOK\r\n")]
+            read_messages = read_messages.split("+CMGL: ")[1:]
+            
+            message_list = []
+            for msg in read_messages:
+                msg_header = msg[:msg.find("\r\n")].replace('"', '').split(",")
+                msg_contents = msg[msg.find("\r\n"):][2:]
+                msg_contents = msg_contents[:-2] if msg_contents.endswith("\r\n") else msg_contents
+                msg_time = msg_header[5][:-3]
+                raw_datetime = f"{msg_header[4]} {msg_time}"
+                parsed_datetime = datetime.strptime(raw_datetime, "%y/%m/%d %H:%M:%S")
+                formatted_date = parsed_datetime.strftime("%Y-%m-%d")
+                formatted_time = parsed_datetime.strftime("%H:%M:%S")
+                message_list.append(
+                        {
+                            "message_index": msg_header[0],
+                            "message_type": msg_header[1],
+                            "message_originating_address": msg_header[2],
+                            "message_destination_address": msg_header[3],
+                            "message_date": formatted_date,
+                            "message_time": formatted_time,
+                            "message_contents": msg_contents
+                        }
+                )
+        except Exception as e:
+            print(f"ERROR: Parsing SMS: pdu_mode: {pdu_mode}, sms_buffer: {sms_buffer}")
+
+    if pdu_mode:
+        print(sms_buffer)
     return message_list
 
 
@@ -445,7 +452,7 @@ class SMS:
                 f"'{type(self).__name__}' object has no attribute '{name}'"
             )
 
-    async def receive_message(self, message_type: str) -> list:
+    async def receive_messages(self, message_type: str) -> list:
         """
         Sends SMS command to AT
         :param message_type: str
@@ -453,15 +460,8 @@ class SMS:
         """
         # self.set_data_mode(1)
         answer = await self.send_at(f'AT+CMGL="{message_type}"', "OK", TIMEOUT)
-        if answer:
-            if message_type != "ALL" and message_type in answer:
-                answer = parse_sms(answer)
-                return answer
-            elif message_type == "ALL":
-                answer = parse_sms(answer)
-                return answer
-            else:
-                print(f"AT command failed, returned the following:\n{answer}")
+        return parse_sms(message_type) if message_type == "ALL" else parse_sms(message_type, True)
+            
 
     def read_message(self, message_type: str) -> list:
         """
@@ -470,7 +470,7 @@ class SMS:
         :return: list<dict>
         """
         try:
-            buffer = self.receive_message(message_type)
+            buffer = self.receive_messages(message_type)
             return buffer
         except Exception as e:
             print("Error:", e)
@@ -485,7 +485,7 @@ class SMS:
         """
         while True:
             try:
-                buffer = self.receive_message(message_type)
+                buffer = self.receive_messages(message_type)
                 return buffer
             except Exception as e:
                 print(f"Unhandled error: {e}")

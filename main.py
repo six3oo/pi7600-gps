@@ -277,20 +277,19 @@ async def info() -> InfoResponse:
 
 # TODO: Update queries to match PDU 
 @app.get("/sms", response_model=List[Messages], status_code=status.HTTP_200_OK)
-async def sms_root(
-    msg_query: str = "ALL", db: Session = Depends(get_db)
+async def sms_root(db: Session = Depends(get_db)
 ) -> List[Messages]:
     """Read messages from modem
     Args:
-        msg_query (str, optional): ["ALL", "REC READ", "REC UNREAD", "STO UNSENT", "STO SENT"]. Defaults to "ALL".
+        # msg_query (str, optional): ["ALL", "REC READ", "REC UNREAD", "STO UNSENT", "STO SENT"]. Defaults to "ALL".
 
     Returns:
         List<dict>: [{Messages}, {Messages}]
     """
-    logger.info(f"Reading {msg_query} messages")
+    logger.info(f"Reading all messages")
 
     # Await the receive_message function to ensure async execution
-    raw_messages = await sms.receive_message(message_type=msg_query)
+    raw_messages = await sms.receive_messages(message_type="4")
     for raw_msg in raw_messages:
         try:
             # this should set true for any message read from the sim
