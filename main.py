@@ -228,16 +228,14 @@ async def sms_root(db: Session = Depends(get_db)
     logger.info(f"Reading all messages")
 
     # Await the receive_message function to ensure async execution
-    raw_messages = await sms.receive_messages()
-    for raw_msg in raw_messages:
+    messages = await sms.receive_messages()
+    for msg in messages:
         try:
             # this should set true for any message read from the sim
             # since the storage is limited, this can be used to remove later
-            raw_msg["in_sim_memory"] = True
-            message = Messages(**raw_msg)
-            await create_message(db=db, message=message)
+            await create_message(db=db, message=msg)
         except ValidationError as e:
-            logger.error(f"Validation error: {e} for raw message: {raw_msg}")
+            logger.error(f"Validation error: {e} for raw message: {msg}")
             continue
     return await messages_from_db(db=db)
 
