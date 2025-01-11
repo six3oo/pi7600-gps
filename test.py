@@ -2,6 +2,7 @@
 with open('pdu.txt', 'r') as file:
     pdu = file.read()
 
+[print(x) for x in pdu.split("\n")]
 
 def status(status):
     match status:
@@ -33,6 +34,8 @@ for pdu in pdu_split:
     msg_status = status(msg_head[1])
     msg_len = msg_head[3]
     pdu_encoded = pdu[1]
+    pdu_decoded = bytes.fromhex(pdu_encoded).decode('latin-1')
+    print(pdu_decoded)
     msgs.append({
         "message_index": msg_idx,
         "message_type": msg_status,
