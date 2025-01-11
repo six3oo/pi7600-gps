@@ -354,12 +354,13 @@ def parse_sms(sms_buffer: str, pdu_mode: bool = False) -> list: # TODO: check fo
                             "message_contents": msg_contents
                         }
                 )
+                return message_list
         except Exception as e:
             print(f"ERROR: Parsing SMS: pdu_mode: {pdu_mode}, sms_buffer: {sms_buffer}")
 
     if pdu_mode:
         print(sms_buffer)
-    return message_list
+    
 
 
 class Phone:
