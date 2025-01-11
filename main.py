@@ -222,16 +222,13 @@ async def info() -> InfoResponse:
 async def sms_root(db: Session = Depends(get_db)
 ) -> List[Messages]:
     """Read messages from modem
-    Args:
-        # msg_query (str, optional): ["ALL", "REC READ", "REC UNREAD", "STO UNSENT", "STO SENT"]. Defaults to "ALL".
-
     Returns:
         List<dict>: [{Messages}, {Messages}]
     """
     logger.info(f"Reading all messages")
 
     # Await the receive_message function to ensure async execution
-    raw_messages = await sms.receive_messages("4")
+    raw_messages = await sms.receive_messages()
     for raw_msg in raw_messages:
         try:
             # this should set true for any message read from the sim
