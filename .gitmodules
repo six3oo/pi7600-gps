@@ -1,0 +1,3 @@
+[submodule "pi7600"]
+	path = pi7600
+	url = https://github.com/dazemc/pi7600-lib.git
