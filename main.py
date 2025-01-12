@@ -290,6 +290,7 @@ async def send_msg(
         message_contents=request.msg,
         in_sim_memory=False,
         is_sent=False,
+        is_partial=False, # TODO: break up large messages
     )
     await create_message(db=db, message=msg)  # TODO: return db message in create_message instead to avoid this next bit
     db_msg = (
