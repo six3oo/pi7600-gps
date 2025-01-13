@@ -44,6 +44,7 @@ watchfiles = "1.0.0"
 websockets = "14.1"
 sqlalchemy = "^2.0.36"
 smspdudecoder = "^2.1.0"
+asyncinit = "^0.2.4"
 
 
 [build-system]

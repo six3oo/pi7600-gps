@@ -23,7 +23,6 @@ cwd = os.getcwd()
 sms = SMS()
 gps = GPS()
 settings = Settings()
-
 logger.info("Sim modules ready")
 
 # Database
@@ -105,7 +104,7 @@ async def messages_to_delete(db: Session):
 async def delete_db_message(db: Session, msg_idx: int):
     message_db = db.query(MessageCreate).filter(MessageCreate.id == msg_idx).first()
     if message_db:
-        if message_db.in_sim_memory == True:
+        if message_db.in_sim_memory:
             await sms.delete_message(msg_idx=msg_idx)
         db.delete(message_db)
         db.commit()
@@ -172,6 +171,7 @@ async def root() -> StatusResponse:
         if apn_check
         else "ERROR"
     )
+    timezone = settings.timezone
 
     return StatusResponse(
         at=at,
@@ -184,6 +184,7 @@ async def root() -> StatusResponse:
         data=data,
         dns=dns,
         apn=apn,
+        timezone=timezone,
     )
 
 
