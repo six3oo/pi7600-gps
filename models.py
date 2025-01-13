@@ -65,7 +65,7 @@ class StatusResponse(BaseModel):
     data: str
     dns: str
     apn: str
-    timezone: str
+    timezone: int
 
 class SendMessageRequest(BaseModel):
     number: str
