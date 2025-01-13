@@ -171,7 +171,7 @@ async def root() -> StatusResponse:
         if apn_check
         else "ERROR"
     )
-    timezone = settings.timezone
+    timezone = settings.timezone.zone
 
     return StatusResponse(
         at=at,
