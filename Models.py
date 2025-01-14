@@ -7,7 +7,7 @@ Base = declarative_base()
 
 
 
-# Database Model
+# SMS Database Model
 class MessageCreate(Base):
     __tablename__ = "messages"
 
@@ -28,6 +28,7 @@ class MessageCreate(Base):
     in_sim_memory = Column(Boolean, nullable=True)
     is_sent = Column(Boolean, nullable=True)
 
+# SMS
 class Messages(BaseModel):
     id: Optional[int] = None
     message_index: Optional[str] = None
@@ -46,6 +47,27 @@ class Messages(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+# User Database
+class UserDB(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_name = Column(String, nullable=False)
+    user_password = Column(String, nullable=False)
+    user_full_name = Column(String, nullable=True)
+    user_email = Column(String, nullable=True)
+    is_disabled = Column(Boolean, nullable=False, default=False)
+
+# User Validation
+class User(BaseModel):
+    id: Optional[int]
+    user_name: str
+    user_password: str
+    user_full_name: Optional[str] = None 
+    user_email: Optional[str] = None
+    is_disabled: Optional[bool] = False
+
+    model_config = ConfigDict(from_attributes=True)
 
 class InfoResponse(BaseModel):
     hostname: str

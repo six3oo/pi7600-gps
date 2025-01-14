@@ -10,9 +10,11 @@ from typing import List
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from fastapi import FastAPI, status, Depends
+from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import ValidationError
 from pi7600 import GPS, SMS, TIMEOUT, Settings
-from models import *
+from Models import *
+from Utils import *
 
 # Integrate into uvicorn logger
 logger = logging.getLogger("uvicorn.pi7600")
@@ -24,6 +26,7 @@ sms = SMS()
 gps = GPS()
 settings = Settings()
 logger.info("Sim modules ready")
+
 
 # Database
 DATABASE_URL = "sqlite:///./cmgl.db"
@@ -41,7 +44,10 @@ def get_db():
         db.close()
 
 
-
+def get_user(db: Session, username: str):
+    user: UserDB = db.query(UserDB).filter(UserDB.user_name == username).first()
+    return user if user else None
+    
 
 async def create_message(db: Session, message: MessageCreate):
     existing_message = (
@@ -118,6 +124,27 @@ Base.metadata.create_all(bind=engine)
 
 
 # API
+
+
+@app.post("/token")
+async def generate_token(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
+    #user_data = {"sub": "example_user"}
+    user = get_user(db, form_data.username)
+    if user:
+        user_data = {"sub": form_data.username}
+        if verify_password(form_data.password, user.user_password):
+            token = create_jwt(data=user_data)
+            return {"access_token": token, "token_type": "bearer"}
+
+
+@app.post("/user")
+async def create_user(request: User, db: Session = Depends(get_db)):
+    new_user = UserDB(**request.dict())
+    db.add(new_user)
+    db.commit()
+    return new_user
+
+
 @app.get("/", response_model=StatusResponse, status_code=status.HTTP_200_OK)
 async def root() -> StatusResponse:
     """Parses out modem and network information
