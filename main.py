@@ -9,8 +9,8 @@ from datetime import datetime
 from typing import List
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
-from fastapi import FastAPI, status, Depends
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import FastAPI, status, Depends, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from pydantic import ValidationError
 from pi7600 import GPS, SMS, TIMEOUT, Settings
 from Models import *
@@ -32,7 +32,7 @@ logger.info("Sim modules ready")
 DATABASE_URL = "sqlite:///./cmgl.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 def get_db():
@@ -47,7 +47,16 @@ def get_db():
 def get_user(db: Session, username: str):
     user: UserDB = db.query(UserDB).filter(UserDB.user_name == username).first()
     return user if user else None
-    
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    payload = verify_jwt(token)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return payload
 
 async def create_message(db: Session, message: MessageCreate):
     existing_message = (
@@ -137,25 +146,25 @@ async def generate_token(db: Session = Depends(get_db), form_data: OAuth2Passwor
             return {"access_token": token, "token_type": "bearer"}
 
 
-@app.post("/user")
+@app.post("/user", status_code=status.HTTP_201_CREATED)
 async def create_user(request: User, db: Session = Depends(get_db)):
     new_user: dict = request.model_dump()
     new_user["user_password"] = hash_password(new_user["user_password"])
     new_user = UserDB(**new_user)
     db.add(new_user)
     db.commit()
-    return new_user
+    return {"response": "User created successfully", "username": new_user.user_name}
 
 
 @app.get("/", response_model=StatusResponse, status_code=status.HTTP_200_OK)
-async def root() -> StatusResponse:
+async def root(user = Depends(get_current_user)) -> StatusResponse:
     """Parses out modem and network information
 
     Returns:
         dict: Various network and device checks
     """
     logger.info("Compiling modem status information")
-
+    logger.info(user)
     # Ensure to await all asynchronous calls
     at_check = await settings.send_at("AT", "OK", TIMEOUT)
     at = at_check.splitlines()[2] if at_check else "ERROR"

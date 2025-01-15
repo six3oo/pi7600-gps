@@ -60,7 +60,6 @@ class UserDB(Base):
 
 # User Validation
 class User(BaseModel):
-    id: Optional[int]
     user_name: str
     user_password: str 
     user_full_name: Optional[str] = None 
