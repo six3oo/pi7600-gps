@@ -1,5 +1,5 @@
 import jwt
-from passlib.context import CryptContext
+import bcrypt
 from datetime import datetime, timedelta, timezone
 
 
@@ -7,7 +7,6 @@ PRIVATE_KEY_PATH = '.ssh/id_rsa'
 PUBLIC_KEY_PATH = '.ssh/id_rsa.pub'
 EXPIRE_MINUTES = 30
 
-pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 with open(PRIVATE_KEY_PATH, 'r') as file:
     PRIVATE_KEY = file.read()
@@ -32,8 +31,13 @@ def verify_jwt(token: str):
         raise ValueError("INVALID TOKEN")
 
 def verify_password(password, hashed_password):
-    return pwd_ctx.verify(password, hashed_password)
+    return bcrypt.checkpw(
+            bytes(password, encoding='utf-8'),
+            bytes(hashed_password, encoding='utf-8'),
+    )
 
 def hash_password(password):
-    return pwd_ctx.hash(password)
-
+    return bcrypt.hashpw(
+            bytes(password, encoding="utf-8"),
+            bcrypt.gensalt(),
+    )

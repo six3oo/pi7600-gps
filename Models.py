@@ -1,6 +1,6 @@
 from typing import Optional
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, LargeBinary
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -53,7 +53,7 @@ class UserDB(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     user_name = Column(String, nullable=False)
-    user_password = Column(String, nullable=False)
+    user_password = Column(LargeBinary, nullable=False)
     user_full_name = Column(String, nullable=True)
     user_email = Column(String, nullable=True)
     is_disabled = Column(Boolean, nullable=False, default=False)
@@ -62,7 +62,7 @@ class UserDB(Base):
 class User(BaseModel):
     id: Optional[int]
     user_name: str
-    user_password: str
+    user_password:bytes 
     user_full_name: Optional[str] = None 
     user_email: Optional[str] = None
     is_disabled: Optional[bool] = False
