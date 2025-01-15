@@ -145,15 +145,15 @@ async def generate_token(db: Session = Depends(get_db), form_data: OAuth2Passwor
             token = create_jwt(data=user_data)
             return {"access_token": token, "token_type": "bearer"}
 
-
-@app.post("/user", status_code=status.HTTP_201_CREATED)
-async def create_user(request: User, db: Session = Depends(get_db)):
-    new_user: dict = request.model_dump()
-    new_user["user_password"] = hash_password(new_user["user_password"])
-    new_user = UserDB(**new_user)
-    db.add(new_user)
-    db.commit()
-    return {"response": "User created successfully", "username": new_user.user_name}
+# TODO: 
+#@app.post("/user", status_code=status.HTTP_201_CREATED)
+#async def create_user(request: User, db: Session = Depends(get_db)):
+#    new_user: dict = request.model_dump()
+#    new_user["user_password"] = hash_password(new_user["user_password"])
+#    new_user = UserDB(**new_user)
+#    db.add(new_user)
+#    db.commit()
+#    return {"response": "User created successfully", "username": new_user.user_name}
 
 
 @app.get("/", response_model=StatusResponse, status_code=status.HTTP_200_OK)
