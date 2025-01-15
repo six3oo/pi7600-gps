@@ -163,8 +163,8 @@ async def root(user = Depends(get_current_user)) -> StatusResponse:
     Returns:
         dict: Various network and device checks
     """
+    logger.info(f"/ GET: Accessed by {user['sub']}")
     logger.info("Compiling modem status information")
-    logger.info(user)
     # Ensure to await all asynchronous calls
     at_check = await settings.send_at("AT", "OK", TIMEOUT)
     at = at_check.splitlines()[2] if at_check else "ERROR"
@@ -236,12 +236,13 @@ async def run_async_subprocess(cmd: List[str]) -> str:
 
 
 @app.get("/info", response_model=InfoResponse, status_code=status.HTTP_200_OK)
-async def info() -> InfoResponse:
+async def info(user: dict = Depends(get_current_user)) -> InfoResponse:
     """Host device information
 
     Returns:
         dict: hostname, uname, date, arch
     """
+    logger.info(f"/info GET: Accesed by {user['sub']}")
     logger.info("Compiling host device information")
 
     hostname = await run_async_subprocess(["hostname"])
@@ -258,13 +259,14 @@ async def info() -> InfoResponse:
 
 # TODO: Update queries to match PDU 
 @app.get("/sms", response_model=List[Messages], status_code=status.HTTP_200_OK)
-async def sms_root(db: Session = Depends(get_db)
+async def sms_root(db: Session = Depends(get_db), user: dict = Depends(get_current_user),
 ) -> List[Messages]:
     """Read messages from modem
     Returns:
         List<dict>: [{Messages}, {Messages}]
     """
-    logger.info(f"Reading all messages")
+    logger.info(f"/sms GET: Accessed by {user['sub']}"),
+    logger.info("Reading all messages")
 
     # Await the receive_message function to ensure async execution
     messages = await sms.receive_messages()
@@ -280,7 +282,7 @@ async def sms_root(db: Session = Depends(get_db)
 
 
 @app.delete("/sms/delete/{msg_idx}", status_code=status.HTTP_202_ACCEPTED)
-async def delete_msg(msg_idx: int, db: Session = Depends(get_db)) -> dict:
+async def delete_msg(msg_idx: int, db: Session = Depends(get_db), user: dict = Depends(get_current_user)) -> dict:
     """Delete sms message by MODEM index
 
     Args:
@@ -289,6 +291,7 @@ async def delete_msg(msg_idx: int, db: Session = Depends(get_db)) -> dict:
     Returns:
         dict: {"response": "Success"} | False
     """
+    logger.info(f"/sms/delete DELETE: Accessed by {user['sub']}")
     logger.info(f"DELETED_SMS: {msg_idx}")
     # resp = await sms.delete_message(msg_idx)  # Await the async delete_message call
     await delete_db_message(db=db, msg_idx=msg_idx)
@@ -296,7 +299,8 @@ async def delete_msg(msg_idx: int, db: Session = Depends(get_db)) -> dict:
 
 
 @app.delete("/sms/cleanup/", status_code=status.HTTP_202_ACCEPTED)
-async def clear_sim_memory(db: Session = Depends(get_db)) -> dict:
+async def clear_sim_memory(db: Session = Depends(get_db), user: dict = Depends(get_current_user)) -> dict:
+    logger.info(f"/sms/cleanup DELETE: Accessed by {user['sub']}")
     logger.info("Clearing sim sms memory")
     await messages_to_delete(db=db)
     return {"response": "Ok"}
@@ -306,6 +310,7 @@ async def clear_sim_memory(db: Session = Depends(get_db)) -> dict:
 async def send_msg(
     request: SendMessageRequest,
     db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
 ) -> Messages:
     """POST SMS Message to destination number
 
@@ -316,7 +321,7 @@ async def send_msg(
     Returns:
         MessageCreate
     """
-    logger.info("/sms: Received request to send message")
+    logger.info(f"/sms POST: Accessed by {user['sub']}")
     # Await the async send_message call
     current_time = datetime.now()
     msg = Messages(
@@ -345,7 +350,7 @@ async def send_msg(
 
 
 @app.post("/at", status_code=status.HTTP_202_ACCEPTED)
-async def catcmd(request: AtRequest) -> str:
+async def catcmd(request: AtRequest, user: dict = Depends(get_current_user)) -> str:
     r"""Sends raw AT commands to modem and returns raw stdout, will not work with commands that require input, return response
 
     Args:
@@ -354,6 +359,7 @@ async def catcmd(request: AtRequest) -> str:
     Returns:
         str: raw stdout response if "OK" or "ERROR" if "\r\n" is returned
     """
+    logger.info(f"/at POST: Accessed by {user['sub']}")
     logger.info(f"Sending AT cmd: {request.cmd}")
     # Run command asynchronously if possible, otherwise handle it synchronously
     resp = subprocess.run(
