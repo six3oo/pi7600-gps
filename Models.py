@@ -62,7 +62,7 @@ class UserDB(Base):
 class User(BaseModel):
     id: Optional[int]
     user_name: str
-    user_password:bytes 
+    user_password: str 
     user_full_name: Optional[str] = None 
     user_email: Optional[str] = None
     is_disabled: Optional[bool] = False

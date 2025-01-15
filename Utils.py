@@ -33,7 +33,7 @@ def verify_jwt(token: str):
 def verify_password(password, hashed_password):
     return bcrypt.checkpw(
             bytes(password, encoding='utf-8'),
-            bytes(hashed_password, encoding='utf-8'),
+            hashed_password,
     )
 
 def hash_password(password):

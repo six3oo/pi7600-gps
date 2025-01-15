@@ -139,7 +139,9 @@ async def generate_token(db: Session = Depends(get_db), form_data: OAuth2Passwor
 
 @app.post("/user")
 async def create_user(request: User, db: Session = Depends(get_db)):
-    new_user = UserDB(**request.dict())
+    new_user: dict = request.model_dump()
+    new_user["user_password"] = hash_password(new_user["user_password"])
+    new_user = UserDB(**new_user)
     db.add(new_user)
     db.commit()
     return new_user
