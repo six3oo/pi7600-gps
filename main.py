@@ -5,6 +5,7 @@ import logging
 import os
 import asyncio
 import subprocess
+import cv2
 from datetime import datetime
 from typing import List
 from sqlalchemy import create_engine
@@ -16,6 +17,8 @@ from pydantic import ValidationError
 from pi7600 import GPS, SMS, TIMEOUT, Settings
 from Models import *
 from Utils import *
+from Webcam import Webcam
+from Websockets import ConnectionManager
 
 # Integrate into uvicorn logger
 logger = logging.getLogger("uvicorn.pi7600")
@@ -27,7 +30,7 @@ sms = SMS()
 gps = GPS()
 settings = Settings()
 logger.info("Sim modules ready")
-
+websocket_manager = ConnectionManager()
 
 # Database
 DATABASE_URL = "sqlite:///./cmgl.db"
@@ -139,13 +142,16 @@ Base.metadata.create_all(bind=engine)
 @app.post("/token", status_code=status.HTTP_200_OK)
 async def generate_token(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
     #user_data = {"sub": "example_user"}
-    user = get_user(db, form_data.username)
-    if user:
-        user_data = {"sub": form_data.username}
-        if verify_password(form_data.password, user.user_password):
-            token = create_jwt(data=user_data)
-            return {"access_token": token, "token_type": "bearer"}
-
+    try:
+        user = get_user(db, form_data.username)
+        if user:
+            user_data = {"sub": form_data.username}
+            if verify_password(form_data.password, user.user_password):
+                token = create_jwt(data=user_data)
+                return {"access_token": token, "token_type": "bearer"}
+    except Exception as e:
+        logger.error(f"/token ERROR: {e}")
+        return status.HTTP_401_UNAUTHORIZED
 # TODO: 
 #@app.post("/user", status_code=status.HTTP_201_CREATED)
 #async def create_user(request: User, db: Session = Depends(get_db)):
@@ -369,14 +375,43 @@ async def catcmd(request: AtRequest, user: dict = Depends(get_current_user)) -> 
     return resp
 
 
-@app.websocket("/ws")
+@app.websocket("/wss")
 async def websocket_end(websocket: WebSocket, user: dict = Depends(get_current_user)):
     logger.info(f"/ws WEBSOCKET: Accessed by {user['sub']}")
     await websocket.accept()
     try:
         while True:
             data = await websocket.receive_text()
-            print(data)
             await websocket.send_text(f"Message received: {data}")
     except WebSocketDisconnect:
-        print("WebSocket diconnected")
+        logger.info("WebSocket diconnected")
+
+
+@app.websocket('/wss/video')
+async def video_stream(websocket: WebSocket):
+    webcam = Webcam()
+    await websocket_manager.connect(websocket)
+
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        websocket_manager.disconnect(websocket)
+        return
+
+    try:
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            encoded_frame = webcam.encode_frame(frame)
+            await websocket.send_text(encoded_frame)
+    
+    except WebSocketDisconnect:
+        websocket_manager.disconnect(websocket)
+
+    except Exception as e:
+        logger.error(f"ERROR: {e}")
+
+    finally:
+        cap.release()
+

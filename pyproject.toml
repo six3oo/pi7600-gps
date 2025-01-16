@@ -46,6 +46,8 @@ sqlalchemy = "^2.0.36"
 smspdudecoder = "^2.1.0"
 pyjwt = {extras = ["crypto"], version = "^2.10.1"}
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+opencv-python-headless = "^4.10.0.84"
+opencv-python = "^4.10.0.84"
 
 
 [build-system]
