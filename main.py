@@ -10,6 +10,7 @@ from typing import List
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from fastapi import FastAPI, status, Depends, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from pydantic import ValidationError
 from pi7600 import GPS, SMS, TIMEOUT, Settings
@@ -135,7 +136,7 @@ Base.metadata.create_all(bind=engine)
 # API
 
 
-@app.post("/token")
+@app.post("/token", status_code=status.HTTP_200_OK)
 async def generate_token(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
     #user_data = {"sub": "example_user"}
     user = get_user(db, form_data.username)
@@ -366,3 +367,16 @@ async def catcmd(request: AtRequest, user: dict = Depends(get_current_user)) -> 
         ["./scripts/catcmd", request.cmd], capture_output=True, text=True, check=False
     ).stdout
     return resp
+
+
+@app.websocket("/ws")
+async def websocket_end(websocket: WebSocket, user: dict = Depends(get_current_user)):
+    logger.info(f"/ws WEBSOCKET: Accessed by {user['sub']}")
+    await websocket.accept()
+    try:
+        while True:
+            data = await websocket.receive_text()
+            print(data)
+            await websocket.send_text(f"Message received: {data}")
+    except WebSocketDisconnect:
+        print("WebSocket diconnected")
