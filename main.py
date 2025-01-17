@@ -13,6 +13,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from fastapi import FastAPI, status, Depends, HTTPException
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
 from pi7600 import GPS, SMS, TIMEOUT, Settings
 from Models import *
@@ -376,19 +377,27 @@ async def catcmd(request: AtRequest, user: dict = Depends(get_current_user)) -> 
 
 
 @app.websocket("/wss")
-async def websocket_end(websocket: WebSocket, user: dict = Depends(get_current_user)):
-    logger.info(f"/ws WEBSOCKET: Accessed by {user['sub']}")
+async def websocket_end(websocket: WebSocket, 
+                       # user: dict = Depends(get_current_user)
+                        ):
+#    logger.info(f"/ws WEBSOCKET: Accessed by {user['sub']}")
     await websocket.accept()
+    logger.info("Websocket created")
     try:
         while True:
+            logger.info("Waiting for data..")
             data = await websocket.receive_text()
+            logger.info(f"/wss WEBSOCKET: {data}")
             await websocket.send_text(f"Message received: {data}")
     except WebSocketDisconnect:
         logger.info("WebSocket diconnected")
 
 
 @app.websocket('/wss/video')
-async def video_stream(websocket: WebSocket):
+async def video_stream(websocket: WebSocket, 
+                      # user: dict = Depends(get_current_user)
+                       ):
+    #logger.info(f"/ws WEBSOCKET: Accessed by {user['sub']}") 
     webcam = Webcam()
     await websocket_manager.connect(websocket)
 
@@ -415,3 +424,31 @@ async def video_stream(websocket: WebSocket):
     finally:
         cap.release()
 
+
+@app.get("/video")
+async def video_feed():
+    def generate():
+        webcam = Webcam()
+        cap = webcam.cap# Use 0 for default camera
+        try:
+            while True:
+                success, frame = cap.read()
+                if not success:
+                    break
+
+                # Encode the frame in JPEG format
+                ret, buffer = cv2.imencode(".jpg", frame)
+                if not ret:
+                    break
+                frame = buffer.tobytes()
+
+                yield (b'--frame\r\n'
+                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+        except Exception as e:
+            logger.error(f"ERROR: {e}")
+
+        finally:
+            cap.release()
+            cv2.destroyAllWindows()
+    return StreamingResponse(generate(), media_type="multipart/x-mixed-replace; boundary=frame")
