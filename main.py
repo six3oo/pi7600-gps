@@ -5,13 +5,11 @@ import logging
 import os
 import asyncio
 import subprocess
-import cv2
 from datetime import datetime
 from typing import List
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
-from fastapi import FastAPI, status, Depends, HTTPException
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, status, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
@@ -401,7 +399,7 @@ async def video_stream(websocket: WebSocket,
     webcam = Webcam()
     await websocket_manager.connect(websocket)
 
-    cap = cv2.VideoCapture(0)
+    cap = webcam.cap 
     if not cap.isOpened():
         websocket_manager.disconnect(websocket)
         return
@@ -412,7 +410,7 @@ async def video_stream(websocket: WebSocket,
             if not ret:
                 break
 
-            encoded_frame = webcam.encode_frame(frame)
+            encoded_frame = webcam.encode_frame_base64(frame)
             await websocket.send_text(encoded_frame)
     
     except WebSocketDisconnect:
@@ -425,30 +423,34 @@ async def video_stream(websocket: WebSocket,
         cap.release()
 
 
-@app.get("/video")
-async def video_feed():
+@app.get("/video") # TODO:
+async def video_feed(
+                    # user: dict = Depends(get_current_user)
+):
     def generate():
         webcam = Webcam()
-        cap = webcam.cap# Use 0 for default camera
+        cap = webcam.cap
+        if not cap.isOpened():
+            print("no camera found")
+            return
         try:
-            while True:
-                success, frame = cap.read()
-                if not success:
-                    break
+            if not webcam.is_streaming:
+                while True:
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
 
-                # Encode the frame in JPEG format
-                ret, buffer = cv2.imencode(".jpg", frame)
-                if not ret:
-                    break
-                frame = buffer.tobytes()
+                    frame = webcam.encode_frame(frame)
 
-                yield (b'--frame\r\n'
+                    yield (b'--frame\r\n'
                     b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-
+            else:
+                print('already streaming')
+                return
         except Exception as e:
             logger.error(f"ERROR: {e}")
 
         finally:
             cap.release()
-            cv2.destroyAllWindows()
     return StreamingResponse(generate(), media_type="multipart/x-mixed-replace; boundary=frame")
+

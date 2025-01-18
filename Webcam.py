@@ -26,9 +26,15 @@ class SingletonMeta(type):
 class Webcam(metaclass=SingletonMeta):
     def __init__(self):
         self.cap = cv2.VideoCapture(0)
+        self.is_streaming = False
 
-
-    def encode_frame(self, frame):
+    def encode_frame_base64(self, frame) -> str:
         _, buffer = cv2.imencode('.jpg', frame)
         return base64.b64encode(buffer).decode('utf-8')
+
+
+    def encode_frame(self, frame) -> bytes:
+        _, buffer = cv2.imencode('.jpg', frame)
+        frame = buffer.tobytes()
+        return frame
 
