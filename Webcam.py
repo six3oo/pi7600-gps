@@ -1,44 +1,55 @@
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+import threading
 import cv2
 import base64
+import asyncio
 
+app = FastAPI()
 
-class SingletonMeta(type):
-    """
-    This metaclass ensures that only one instance of any class using it exists.
-    """
-
-    _instances = {}  # Dictionary to hold single instances
-
-    def __call__(cls, *args, **kwargs):
-        """
-        If an instance of cls doesn't exist, create one and store it in _instances.
-        Otherwise, return the existing instance.
-        """
-        if cls not in cls._instances:
-            # print(f"Creating new instance of {cls.__name__}")
-            cls._instances[cls] = super(SingletonMeta, cls).__call__(*args, **kwargs)
-        else:
-            # print(f"Using existing instance of {cls.__name__}")
-            pass
-        return cls._instances[cls]
-
-
-class Webcam(metaclass=SingletonMeta):
+class VideoCaptureThread:
     def __init__(self):
         self.cap = cv2.VideoCapture(-1, cv2.CAP_V4L2)
-        self.is_streaming = False
+        self.running = True
+        self.queue = asyncio.Queue()  # Using asyncio.Queue for async-safe frame handling
+        self.thread = threading.Thread(target=self._reader)
+        self.thread.daemon = True
+        self.thread.start()
+
+    def _reader(self):
+        loop = asyncio.new_event_loop()  # Create a new event loop in this thread
+        asyncio.set_event_loop(loop)  # Set the new event loop as the current loop
+        while self.running:
+            ret, frame = self.cap.read()
+            if not ret:
+                break
+            loop.run_until_complete(self.queue.put(frame))  # Run the async task in the new loop
 
     def encode_frame_base64(self, frame) -> str:
         _, buffer = cv2.imencode('.jpg', frame)
         return base64.b64encode(buffer).decode('utf-8')
 
+    async def get_frame(self):
+        frame = await self.queue.get()
+        return self.encode_frame_base64(frame)
 
-    def encode_frame(self, frame) -> bytes:
-        _, buffer = cv2.imencode('.jpg', frame)
-        frame = buffer.tobytes()
-        return frame
-
-    
-    def disconnect_all(self) -> None:
+    def release(self):
+        self.running = False
         self.cap.release()
-        cv2.destroyAllWindows()
+        self.thread.join()
+
+class VideoStreamManager:
+    def __init__(self):
+        self.connections = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.connections.append(websocket)
+
+    async def send_frame(self, frame):
+        for websocket in self.connections:
+            await websocket.send_text(frame)
+
+    def disconnect(self, websocket: WebSocket):
+        self.connections.remove(websocket)
+
+

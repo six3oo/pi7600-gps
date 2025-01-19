@@ -19,7 +19,7 @@ from pydantic import ValidationError
 from pi7600 import GPS, SMS, TIMEOUT, Settings
 from Models import *
 from Utils import *
-from Webcam import Webcam
+from Webcam import VideoCaptureThread, VideoStreamManager
 from Websockets import ConnectionManager
 
 # Integrate into uvicorn logger
@@ -30,12 +30,14 @@ logger.info("Initializing sim modules")
 # Camera
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global webcam
-    webcam = Webcam()
-    yield
-    webcam.cap.release()
-    cv2.destroyAllWindows()
+    global video_stream_manager, video_capture
 
+    video_stream_manager = VideoStreamManager()
+    video_capture = VideoCaptureThread()
+
+    yield
+    video_capture.release()
+    cv2.destroyAllWindows()
 
 lock = threading.Lock()
 
@@ -52,7 +54,6 @@ DATABASE_URL = "sqlite:///./cmgl.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
 
 def get_db():
     logger.info("Starting database session")
@@ -154,25 +155,15 @@ Base.metadata.create_all(bind=engine)
 # API
 
 
-
-async def generate_frames_websocket():
-    while True:
-        with lock:
-            ret, frame = webcam.cap.read()
-            if not ret:
-                break 
-            yield webcam.encode_frame_base64(frame)
-
-
-async def generate_frames_multipart():
-    while True:
-        with lock:
-            ret, frame = webcam.cap.read()
-            if not ret:
-                break
-            encoded_frame = webcam.encode_frame(frame)
-            yield (b'--frame\r\n'
-                b'Content-Type: image/jpeg\r\n\r\n' + encoded_frame + b'\r\n')
+# async def generate_frames_multipart():
+#     while True:
+#         with lock:
+#             ret, frame = webcam.read()
+#             if not ret:
+#                 break
+#             encoded_frame = webcam.encode_frame(frame)
+#             yield (b'--frame\r\n'
+#                 b'Content-Type: image/jpeg\r\n\r\n' + encoded_frame + b'\r\n')
 
 @app.post("/token", status_code=status.HTTP_200_OK)
 async def generate_token(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
@@ -427,25 +418,20 @@ async def websocket_end(websocket: WebSocket,
         logger.info("WebSocket diconnected")
 
 
-@app.websocket('/wss/video')
-async def video_stream(websocket: WebSocket, 
-                      # user: dict = Depends(get_current_user),
-                       ):
-    #logger.info(f"/ws WEBSOCKET: Accessed by {user['sub']}") 
-    await websocket_manager.connect(websocket)
-
+@app.websocket("/wss/video")
+async def video_stream(websocket: WebSocket):
+    await video_stream_manager.connect(websocket)
     try:
-        async for frame in generate_frames_websocket():
-            await websocket.send_text(frame)
-    
-    except WebSocketDisconnect:
-        websocket_manager.disconnect(websocket)
-
+        while True:
+            frame = await video_capture.get_frame()
+            await video_stream_manager.send_frame(frame)
+    except WebSocketDisconnect: #TODO: Closing one stream, closes all...
+        video_stream_manager.disconnect(websocket)
     except Exception as e:
-        logger.error(f"ERROR: {e}")
+        print(f"ERROR: {e}")
 
 
-@app.get("/video")
-async def stream():
-    return StreamingResponse(generate_frames_multipart(), media_type="multipart/x-mixed-replace; boundary=frame")
-
+# @app.get("/video")
+# async def stream():
+#     return StreamingResponse(generate_frames_multipart(), media_type="multipart/x-mixed-replace; boundary=frame")
+#
