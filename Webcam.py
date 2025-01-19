@@ -25,7 +25,7 @@ class SingletonMeta(type):
 
 class Webcam(metaclass=SingletonMeta):
     def __init__(self):
-        self.cap = cv2.VideoCapture(0)
+        self.cap = cv2.VideoCapture(-1, cv2.CAP_V4L2)
         self.is_streaming = False
 
     def encode_frame_base64(self, frame) -> str:
@@ -38,3 +38,7 @@ class Webcam(metaclass=SingletonMeta):
         frame = buffer.tobytes()
         return frame
 
+    
+    def disconnect_all(self) -> None:
+        self.cap.release()
+        cv2.destroyAllWindows()

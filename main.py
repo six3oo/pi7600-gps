@@ -1,10 +1,13 @@
 # TODO: ! sqlcipher, totp, api key, websocket !
 """FastAPI for SIMCOM 7600G-H"""
 
+from contextlib import asynccontextmanager
 import logging
 import os
 import asyncio
+import threading
 import subprocess
+import cv2
 from datetime import datetime
 from typing import List
 from sqlalchemy import create_engine
@@ -23,7 +26,20 @@ from Websockets import ConnectionManager
 logger = logging.getLogger("uvicorn.pi7600")
 logger.info("Initializing sim modules")
 
-app = FastAPI()
+
+# Camera
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global webcam
+    webcam = Webcam()
+    yield
+    webcam.cap.release()
+    cv2.destroyAllWindows()
+
+
+lock = threading.Lock()
+
+app = FastAPI(lifespan=lifespan)
 cwd = os.getcwd()
 sms = SMS()
 gps = GPS()
@@ -137,6 +153,26 @@ Base.metadata.create_all(bind=engine)
 
 # API
 
+
+
+async def generate_frames_websocket():
+    while True:
+        with lock:
+            ret, frame = webcam.cap.read()
+            if not ret:
+                break 
+            yield webcam.encode_frame_base64(frame)
+
+
+async def generate_frames_multipart():
+    while True:
+        with lock:
+            ret, frame = webcam.cap.read()
+            if not ret:
+                break
+            encoded_frame = webcam.encode_frame(frame)
+            yield (b'--frame\r\n'
+                b'Content-Type: image/jpeg\r\n\r\n' + encoded_frame + b'\r\n')
 
 @app.post("/token", status_code=status.HTTP_200_OK)
 async def generate_token(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
@@ -393,25 +429,14 @@ async def websocket_end(websocket: WebSocket,
 
 @app.websocket('/wss/video')
 async def video_stream(websocket: WebSocket, 
-                      # user: dict = Depends(get_current_user)
+                      # user: dict = Depends(get_current_user),
                        ):
     #logger.info(f"/ws WEBSOCKET: Accessed by {user['sub']}") 
-    webcam = Webcam()
     await websocket_manager.connect(websocket)
 
-    cap = webcam.cap 
-    if not cap.isOpened():
-        websocket_manager.disconnect(websocket)
-        return
-
     try:
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-
-            encoded_frame = webcam.encode_frame_base64(frame)
-            await websocket.send_text(encoded_frame)
+        async for frame in generate_frames_websocket():
+            await websocket.send_text(frame)
     
     except WebSocketDisconnect:
         websocket_manager.disconnect(websocket)
@@ -419,38 +444,8 @@ async def video_stream(websocket: WebSocket,
     except Exception as e:
         logger.error(f"ERROR: {e}")
 
-    finally:
-        cap.release()
 
-
-@app.get("/video") # TODO:
-async def video_feed(
-                    # user: dict = Depends(get_current_user)
-):
-    def generate():
-        webcam = Webcam()
-        cap = webcam.cap
-        if not cap.isOpened():
-            print("no camera found")
-            return
-        try:
-            if not webcam.is_streaming:
-                while True:
-                    ret, frame = cap.read()
-                    if not ret:
-                        break
-
-                    frame = webcam.encode_frame(frame)
-
-                    yield (b'--frame\r\n'
-                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-            else:
-                print('already streaming')
-                return
-        except Exception as e:
-            logger.error(f"ERROR: {e}")
-
-        finally:
-            cap.release()
-    return StreamingResponse(generate(), media_type="multipart/x-mixed-replace; boundary=frame")
+@app.get("/video")
+async def stream():
+    return StreamingResponse(generate_frames_multipart(), media_type="multipart/x-mixed-replace; boundary=frame")
 
