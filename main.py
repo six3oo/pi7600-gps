@@ -423,7 +423,11 @@ async def video_stream(websocket: WebSocket):
     await video_stream_manager.connect(websocket)
     try:
         while True:
-            frame = await video_capture.get_frame()
+            # print(f'reading frame: {self.frame}')
+            ret, frame = video_capture.cap.read()
+            if not ret:
+                break
+            frame = await video_capture.encode_frame_base64(frame)
             await video_stream_manager.send_frame(frame)
     except WebSocketDisconnect: #TODO: Closing one stream, closes all...
         video_stream_manager.disconnect(websocket)
