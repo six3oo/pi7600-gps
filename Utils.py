@@ -3,8 +3,8 @@ import bcrypt
 from datetime import datetime, timedelta, timezone
 
 
-PRIVATE_KEY_PATH = '.ssh/id_rsa'
-PUBLIC_KEY_PATH = '.ssh/id_rsa.pub'
+PRIVATE_KEY_PATH = '.keys/private.pem'
+PUBLIC_KEY_PATH = '.keys/public.pem'
 EXPIRE_MINUTES = 30
 
 
