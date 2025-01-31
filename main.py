@@ -12,7 +12,14 @@ from datetime import datetime
 from typing import List
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
-from fastapi import FastAPI, status, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import (
+    FastAPI,
+    status,
+    Depends,
+    HTTPException,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
@@ -39,6 +46,7 @@ async def lifespan(app: FastAPI):
     video_capture.release()
     cv2.destroyAllWindows()
 
+
 lock = threading.Lock()
 
 app = FastAPI(lifespan=lifespan)
@@ -55,6 +63,7 @@ engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+
 def get_db():
     logger.info("Starting database session")
     db = SessionLocal()
@@ -68,6 +77,7 @@ def get_user(db: Session, username: str):
     user: UserDB = db.query(UserDB).filter(UserDB.user_name == username).first()
     return user if user else None
 
+
 def get_current_user(token: str = Depends(oauth2_scheme)):
     payload = verify_jwt(token)
     if not payload:
@@ -77,6 +87,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
             headers={"WWW-Authenticate": "Bearer"},
         )
     return payload
+
 
 async def create_message(db: Session, message: MessageCreate):
     existing_message = (
@@ -150,8 +161,6 @@ async def delete_db_message(db: Session, msg_idx: int):
 Base.metadata.create_all(bind=engine)
 
 
-
-
 # API
 
 
@@ -165,9 +174,12 @@ Base.metadata.create_all(bind=engine)
 #             yield (b'--frame\r\n'
 #                 b'Content-Type: image/jpeg\r\n\r\n' + encoded_frame + b'\r\n')
 
+
 @app.post("/token", status_code=status.HTTP_200_OK)
-async def generate_token(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
-    #user_data = {"sub": "example_user"}
+async def generate_token(
+    db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()
+):
+    # user_data = {"sub": "example_user"}
     try:
         user = get_user(db, form_data.username)
         if user:
@@ -178,9 +190,11 @@ async def generate_token(db: Session = Depends(get_db), form_data: OAuth2Passwor
     except Exception as e:
         logger.error(f"/token ERROR: {e}")
         return status.HTTP_401_UNAUTHORIZED
-# TODO: 
-#@app.post("/user", status_code=status.HTTP_201_CREATED)
-#async def create_user(request: User, db: Session = Depends(get_db)):
+
+
+# TODO:
+# @app.post("/user", status_code=status.HTTP_201_CREATED)
+# async def create_user(request: User, db: Session = Depends(get_db)):
 #    new_user: dict = request.model_dump()
 #    new_user["user_password"] = hash_password(new_user["user_password"])
 #    new_user = UserDB(**new_user)
@@ -190,7 +204,7 @@ async def generate_token(db: Session = Depends(get_db), form_data: OAuth2Passwor
 
 
 @app.get("/", response_model=StatusResponse, status_code=status.HTTP_200_OK)
-async def root(user = Depends(get_current_user)) -> StatusResponse:
+async def root(user=Depends(get_current_user)) -> StatusResponse:
     """Parses out modem and network information
 
     Returns:
@@ -290,15 +304,18 @@ async def info(user: dict = Depends(get_current_user)) -> InfoResponse:
         arch=arch.strip(),
     )
 
-# TODO: Update queries to match PDU 
+
+# TODO: Update queries to match PDU
 @app.get("/sms", response_model=List[Messages], status_code=status.HTTP_200_OK)
-async def sms_root(db: Session = Depends(get_db), user: dict = Depends(get_current_user),
+async def sms_root(
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
 ) -> List[Messages]:
     """Read messages from modem
     Returns:
         List<dict>: [{Messages}, {Messages}]
     """
-    logger.info(f"/sms GET: Accessed by {user['sub']}"),
+    (logger.info(f"/sms GET: Accessed by {user['sub']}"),)
     logger.info("Reading all messages")
 
     # Await the receive_message function to ensure async execution
@@ -315,7 +332,9 @@ async def sms_root(db: Session = Depends(get_db), user: dict = Depends(get_curre
 
 
 @app.delete("/sms/delete/{msg_idx}", status_code=status.HTTP_202_ACCEPTED)
-async def delete_msg(msg_idx: int, db: Session = Depends(get_db), user: dict = Depends(get_current_user)) -> dict:
+async def delete_msg(
+    msg_idx: int, db: Session = Depends(get_db), user: dict = Depends(get_current_user)
+) -> dict:
     """Delete sms message by MODEM index
 
     Args:
@@ -332,7 +351,9 @@ async def delete_msg(msg_idx: int, db: Session = Depends(get_db), user: dict = D
 
 
 @app.delete("/sms/cleanup/", status_code=status.HTTP_202_ACCEPTED)
-async def clear_sim_memory(db: Session = Depends(get_db), user: dict = Depends(get_current_user)) -> dict:
+async def clear_sim_memory(
+    db: Session = Depends(get_db), user: dict = Depends(get_current_user)
+) -> dict:
     logger.info(f"/sms/cleanup DELETE: Accessed by {user['sub']}")
     logger.info("Clearing sim sms memory")
     await messages_to_delete(db=db)
@@ -367,9 +388,11 @@ async def send_msg(
         message_contents=request.msg,
         in_sim_memory=False,
         is_sent=False,
-        is_partial=False, # TODO: break up large messages
+        is_partial=False,  # TODO: break up large messages
     )
-    await create_message(db=db, message=msg)  # TODO: return db message in create_message instead to avoid this next bit
+    await create_message(
+        db=db, message=msg
+    )  # TODO: return db message in create_message instead to avoid this next bit
     db_msg = (
         db.query(MessageCreate)
         .filter(
@@ -402,10 +425,11 @@ async def catcmd(request: AtRequest, user: dict = Depends(get_current_user)) -> 
 
 
 @app.websocket("/wss")
-async def websocket_end(websocket: WebSocket, 
-                       # user: dict = Depends(get_current_user)
-                        ):
-#    logger.info(f"/ws WEBSOCKET: Accessed by {user['sub']}")
+async def websocket_end(
+    websocket: WebSocket,
+    # user: dict = Depends(get_current_user)
+):
+    #    logger.info(f"/ws WEBSOCKET: Accessed by {user['sub']}")
     await websocket.accept()
     logger.info("Websocket created")
     try:
@@ -418,7 +442,9 @@ async def websocket_end(websocket: WebSocket,
         logger.info("WebSocket diconnected")
 
 
-@app.websocket("/wss/video")
+app.websocket("/wss/video")
+
+
 async def video_stream(websocket: WebSocket):
     await video_stream_manager.connect(websocket)
     try:
@@ -429,7 +455,7 @@ async def video_stream(websocket: WebSocket):
                 break
             frame = await video_capture.encode_frame_base64(frame)
             await video_stream_manager.send_frame(frame)
-    except WebSocketDisconnect: #TODO: Closing one stream, closes all...
+    except WebSocketDisconnect:  # TODO: Closing one stream, closes all...
         video_stream_manager.disconnect(websocket)
     except Exception as e:
         print(f"ERROR: {e}")
