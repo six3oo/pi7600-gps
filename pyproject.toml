@@ -48,6 +48,7 @@ pyjwt = {extras = ["crypto"], version = "^2.10.1"}
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 opencv-python-headless = "^4.10.0.84"
 opencv-python = "^4.10.0.84"
+ruff = "^0.9.4"
 
 
 [build-system]

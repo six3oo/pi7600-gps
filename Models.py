@@ -6,7 +6,6 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 
-
 # SMS Database Model
 class MessageCreate(Base):
     __tablename__ = "messages"
@@ -28,6 +27,7 @@ class MessageCreate(Base):
     in_sim_memory = Column(Boolean, nullable=True)
     is_sent = Column(Boolean, nullable=True)
 
+
 # SMS
 class Messages(BaseModel):
     id: Optional[int] = None
@@ -47,6 +47,7 @@ class Messages(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 # User Database
 class UserDB(Base):
     __tablename__ = "users"
@@ -58,15 +59,17 @@ class UserDB(Base):
     user_email = Column(String, nullable=True)
     is_disabled = Column(Boolean, nullable=False, default=False)
 
+
 # User Validation
 class User(BaseModel):
     user_name: str
-    user_password: str 
-    user_full_name: Optional[str] = None 
+    user_password: str
+    user_full_name: Optional[str] = None
     user_email: Optional[str] = None
     is_disabled: Optional[bool] = False
 
     model_config = ConfigDict(from_attributes=True)
+
 
 class InfoResponse(BaseModel):
     hostname: str
@@ -87,6 +90,7 @@ class StatusResponse(BaseModel):
     dns: str
     apn: str
     timezone: int
+
 
 class SendMessageRequest(BaseModel):
     number: str

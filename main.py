@@ -442,9 +442,7 @@ async def websocket_end(
         logger.info("WebSocket diconnected")
 
 
-app.websocket("/wss/video")
-
-
+@app.websocket("/wss/video")
 async def video_stream(websocket: WebSocket):
     await video_stream_manager.connect(websocket)
     try:
@@ -453,8 +451,12 @@ async def video_stream(websocket: WebSocket):
             ret, frame = video_capture.cap.read()
             if not ret:
                 break
-            frame = await video_capture.encode_frame_base64(frame)
-            await video_stream_manager.send_frame(frame)
+            # frame = await video_capture.encode_frame_base64(frame)
+            _, buffer = cv2.imencode(".jpg", frame)
+            if not _:
+                continue
+            frame_bytes = buffer.tobytes()
+            await video_stream_manager.send_frame(frame_bytes)
     except WebSocketDisconnect:  # TODO: Closing one stream, closes all...
         video_stream_manager.disconnect(websocket)
     except Exception as e:

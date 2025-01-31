@@ -3,23 +3,27 @@ import bcrypt
 from datetime import datetime, timedelta, timezone
 
 
-PRIVATE_KEY_PATH = '.keys/private.pem'
-PUBLIC_KEY_PATH = '.keys/public.pem'
+PRIVATE_KEY_PATH = ".keys/private.pem"
+PUBLIC_KEY_PATH = ".keys/public.pem"
 EXPIRE_MINUTES = 30
 
 
-with open(PRIVATE_KEY_PATH, 'r') as file:
+with open(PRIVATE_KEY_PATH, "r") as file:
     PRIVATE_KEY = file.read()
 
-with open(PUBLIC_KEY_PATH, 'r') as file:
+with open(PUBLIC_KEY_PATH, "r") as file:
     PUBLIC_KEY = file.read()
 
-def create_jwt(data: dict, expires_delta: timedelta = timedelta(minutes=EXPIRE_MINUTES)):
+
+def create_jwt(
+    data: dict, expires_delta: timedelta = timedelta(minutes=EXPIRE_MINUTES)
+):
     payload = data.copy()
     payload["exp"] = datetime.now(timezone.utc) + expires_delta
     payload["iat"] = datetime.now(timezone.utc)
-    payload["iss"] = 'pi.daazed.dev'
-    return jwt.encode(payload, PRIVATE_KEY, algorithm='RS256')
+    payload["iss"] = "pi.daazed.dev"
+    return jwt.encode(payload, PRIVATE_KEY, algorithm="RS256")
+
 
 def verify_jwt(token: str):
     try:
@@ -30,14 +34,16 @@ def verify_jwt(token: str):
     except jwt.InvalidTokenError:
         raise ValueError("INVALID TOKEN")
 
+
 def verify_password(password, hashed_password):
     return bcrypt.checkpw(
-            bytes(password, encoding='utf-8'),
-            hashed_password,
+        bytes(password, encoding="utf-8"),
+        hashed_password,
     )
+
 
 def hash_password(password):
     return bcrypt.hashpw(
-            bytes(password, encoding="utf-8"),
-            bcrypt.gensalt(),
+        bytes(password, encoding="utf-8"),
+        bcrypt.gensalt(),
     )
