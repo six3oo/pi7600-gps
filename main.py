@@ -1,4 +1,4 @@
-# TODO: ! sqlcipher, totp, api key, websocket !
+# TODO: ! sqlcipher, totp !
 """FastAPI for SIMCOM 7600G-H"""
 
 from contextlib import asynccontextmanager
@@ -26,7 +26,7 @@ from pydantic import ValidationError
 from pi7600 import GPS, SMS, TIMEOUT, Settings
 from Models import *
 from Utils import *
-from Webcam import VideoCaptureThread, VideoStreamManager
+from Camera import VideoCaptureThread, VideoStreamManager, FacialRecognition
 from Websockets import ConnectionManager
 
 # Integrate into uvicorn logger
@@ -445,6 +445,7 @@ async def websocket_end(
 @app.websocket("/wss/video")
 async def video_stream(websocket: WebSocket):
     await video_stream_manager.connect(websocket)
+    face = FacialRecognition()
     try:
         while True:
             # print(f'reading frame: {self.frame}')
@@ -452,6 +453,7 @@ async def video_stream(websocket: WebSocket):
             if not ret:
                 break
             # frame = await video_capture.encode_frame_base64(frame)
+            ouput = face.recognize_face(frame)
             _, buffer = cv2.imencode(".jpg", frame)
             if not _:
                 continue
