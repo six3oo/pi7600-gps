@@ -27,8 +27,7 @@ GNSS/GPS information from a Waveshare SIM7600 HAT using AT commands.
 
 This module is intentionally minimal.
 
-- Python deps are defined in [pyproject.toml](pyproject.toml).
-- Required runtime deps: `fastapi`, `uvicorn`, `pyserial`, `pydantic`.
+- Python deps are defined in requirements.txt.
 
 ## Usage
 
