@@ -17,21 +17,18 @@ GNSS/GPS information from a Waveshare SIM7600 HAT using AT commands.
 - [Installation](#installation)
 - [Usage](#usage)
 - [API Endpoints](#api-endpoints)
-  - [Modem Status `/`](#modem-status-)
-  - [Host Information `/info`](#host-information-info)
-  - [SMS Management `/sms`](#sms-management-sms)
-    - [Read SMS `GET /sms`](#read-sms-get-sms)
-    - [Send SMS `POST /sms`](#send-sms-post-sms)
-    - [Delete SMS `DELETE /sms/delete/{msg_idx}`](#delete-sms-delete-smsdelete-msg_idx)
-  - [AT Command Interface `/at`](#at-command-interface-at)
-  - [API Documentation `/docs` and `/redoc`](#api-documentation-docs-and-redoc)
+  - [GPS `GET /gps`](#gps-gps)
+  - [Health `GET /health`](#health-health)
+- [Environment](#environment)
 - [Resources](#resources)
-- [Contributing](#contributing)
 - [License](#license)
 
 ## Installation
 
-*Detailed installation instructions will be provided in the future once the project reaches a stable release.*
+This module is intentionally minimal.
+
+- Python deps are defined in [pyproject.toml](pyproject.toml).
+- Required runtime deps: `fastapi`, `uvicorn`, `pyserial`, `pydantic`.
 
 ## Usage
 
@@ -41,7 +38,15 @@ To run the API:
 uvicorn main:app --host 0.0.0.0 --port 8001
 ```
 
-This starts the API server at `http://localhost:8000`.
+OR
+
+```bash
+./start.sh
+```
+
+Either command starts the API server at `http://localhost:8001`.
+
+The API queries the SIM7600 over its AT-command serial port (commonly `/dev/ttyUSB2`).
 
 ## API Endpoints
 
@@ -56,10 +61,42 @@ Example:
 curl http://localhost:8001/gps
 ```
 
+Example response (fields may be `null` when there is no fix):
+
+```json
+{
+  "ok": true,
+  "fix": false,
+  "lat": null,
+  "lon": null,
+  "altitude_m": null,
+  "speed_kmh": null,
+  "heading_deg": null,
+  "utc_time": null,
+  "satellites_in_view": null,
+  "satellites_used": null,
+  "run_status": 1,
+  "fix_status": 0,
+  "raw": "+CGNSINF: ...\nOK",
+  "port": "/dev/ttyUSB2"
+}
+```
+
 ### Health `/health`
 
 ```bash
 curl http://localhost:8001/health
+```
+
+## Environment
+
+- `SIM7600_PORT`: Serial device path. If unset, the code auto-detects `/dev/ttyUSB*` and prefers common SIM7600 ports.
+- `SIM7600_BAUD`: Baud rate (default `115200`).
+
+Example:
+
+```bash
+SIM7600_PORT=/dev/ttyUSB2 SIM7600_BAUD=115200 uvicorn main:app --host 0.0.0.0 --port 8001
 ```
 
 ## Resources
@@ -69,7 +106,7 @@ curl http://localhost:8001/health
 
 ## Contributing
 
-Contributions are welcome! Feel free to open an issue or submit a pull request if you have suggestions or improvements.
+This fork is scoped to GPS-only behavior.
 
 ## License
 
@@ -77,4 +114,4 @@ MIT license
 
 ---
 
-*Note: This project is under active development, and documentation will be updated as features are added.*
+*Note: This module only provides GPS querying/parsing; all other modem/app features were removed.*
