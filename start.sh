@@ -13,5 +13,5 @@ fi
 
 touch "$LOG_PATH"
 
-uvicorn main:app --host 0.0.0.0 --log-config log.yaml
+uvicorn main:app --host 0.0.0.0 --port 8001 --log-config log.yaml
 

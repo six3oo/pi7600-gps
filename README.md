@@ -1,26 +1,16 @@
-# Pi7600: Python Library and REST API for SIM7600 (Simcom says the AT commands are compatible with the 8200 and 8260 5g models as well)
+# Pi7600: GPS-only SIM7600 client
 
 [GitHub Repository](https://github.com/dazemc/pi7600)
 
 ## Overview
 
-**Pi7600** is a Python library and FastAPI-based REST API for managing the [SIM7600 4G HAT from Waveshare](https://www.waveshare.com/wiki/SIM7600G-H_4G_HAT_(B)) on systems like the Raspberry Pi. The project enables various operations for modem control, including:
-
-- Checking modem information and status
-- Retrieving host system details
-- Managing SMS messages (send, read, delete)
-- Executing raw AT commands
-- Accessing GPS data
-
-This tool integrates various modules such as `GPS`, `SMS`, and `Settings` to provide comprehensive control over the modem, all while supporting asynchronous execution for improved performance.
+This submodule has been intentionally stripped down to one purpose: query and return
+GNSS/GPS information from a Waveshare SIM7600 HAT using AT commands.
 
 ## Features
 
-- **Modem Information**: Retrieve network and device status asynchronously.
-- **Host System Information**: Fetch system details like hostname, kernel version, and architecture.
-- **SMS Management**: Send, read, and delete SMS messages with asynchronous support.
-- **AT Command Interface**: Execute raw AT commands and get modem responses asynchronously.
-- **GPS Data**: Access GPS coordinates via the SIM7600 module asynchronously.
+- **GPS Data**: Parse `AT+CGNSINF` into a clean JSON payload.
+- **REST API**: Minimal FastAPI app exposing `GET /gps`.
 
 ## Table of Contents
 
@@ -45,156 +35,32 @@ This tool integrates various modules such as `GPS`, `SMS`, and `Settings` to pro
 
 ## Usage
 
-To run the API, use the FastAPI server powered by `uvicorn`:
+To run the API:
 
 ```bash
-uvicorn main:app --reload
+uvicorn main:app --host 0.0.0.0 --port 8001
 ```
 
 This starts the API server at `http://localhost:8000`.
 
 ## API Endpoints
 
-### Modem Status `/`
+### GPS `/gps`
 
 - **Method**: `GET`
-- **Description**: Returns modem information, including AT command checks, signal quality, SIM status, network registration, and GPS info.
+- **Description**: Queries `AT+CGNSINF` and returns parsed GNSS data.
 
-**Example Request**:
-
-```bash
-curl -X GET http://localhost:8000/
-```
-
-**Response**:
-```json
-{
-  "at": "OK",
-  "cnum": "+11234567890",
-  "csq": "+CSQ: 15,99",
-  "cpin": "+CPIN: READY",
-  "creg": "+CREG: 0,1",
-  "cops": "+COPS: 0,0,\"Home\",7",
-  "gpsinfo": "GPS is active but no signal was found",
-  "data": "OK",
-  "dns": "OK",
-  "apn": "fast.t-mobile.com"
-}
-```
-
-### Host Information `/info`
-
-- **Method**: `GET`
-- **Description**: Fetches host system details like hostname, kernel version, and architecture.
-
-**Example Request**:
+Example:
 
 ```bash
-curl -X GET http://localhost:8000/info
+curl http://localhost:8001/gps
 ```
 
-**Response**:
-```json
-{
-  "hostname": "raspberrypi",
-  "uname": "5.10.17-v7l+",
-  "date": "Tue Sep 17 22:48:47 2024",
-  "arch": "armv7l"
-}
-```
-
-### SMS Management `/sms`
-
-#### Read SMS `GET /sms`
-
-- **Method**: `GET`
-- **Description**: Reads SMS messages from the modem. Supports querying all messages or by specific types (e.g., "REC READ").
-
-**Example Request**:
+### Health `/health`
 
 ```bash
-curl -X GET "http://localhost:8000/sms?msg_query=ALL"
+curl http://localhost:8001/health
 ```
-
-**Response**:
-```json
-[
-  {
-    "message_index": "1",
-    "message_type": "REC READ",
-    "message_originating_address": "+1234567890",
-    "message_destination_address": null,
-    "message_date": "2024-09-17",
-    "message_time": "22:48:47",
-    "message_contents": "Hello World"
-  }
-]
-```
-
-#### Send SMS `POST /sms`
-
-- **Method**: `POST`
-- **Description**: Sends an SMS message to the specified phone number.
-
-**Example Request**:
-
-```bash
-curl -X POST -H "Content-Type: application/json" \
--d '{"number":"+1234567890","msg":"Hello World"}' \
-"http://localhost:8000/sms"
-```
-
-**Response**:
-```json
-{
-  "response": true
-}
-```
-
-#### Delete SMS `DELETE /sms/delete/{msg_idx}`
-
-- **Method**: `DELETE`
-- **Description**: Deletes an SMS by its message index.
-
-**Example Request**:
-
-```bash
-curl -X DELETE http://localhost:8000/sms/delete/1
-```
-
-**Response**:
-```json
-{
-  "response": "Success"
-}
-```
-
-### AT Command Interface `/at`
-
-- **Method**: `POST`
-- **Description**: Sends raw AT commands to the modem and retrieves the response.
-
-**Example Request**:
-
-```bash
-curl -X POST -H "Content-Type: application/json" \
--d '{"cmd":"AT+CSQ"}' \
-"http://localhost:8000/at"
-```
-
-**Response**:
-```json
-"OK"
-```
-
-### API Documentation `/docs` and `/redoc`
-
-FastAPI provides built-in interactive documentation to explore the API endpoints:
-
-- **Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **ReDoc**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
-
-These pages allow you to explore and test the API directly from the browser.
 
 ## Resources
 
