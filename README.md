@@ -1,11 +1,11 @@
-# Pi7600: GPS-only SIM7600 client
+# pi7600-gps: GPS-only SIM7600 client
 
+Based on the original pi7600 by dazemc.
 [GitHub Repository](https://github.com/dazemc/pi7600)
 
 ## Overview
 
-This submodule has been intentionally stripped down to one purpose: query and return
-GNSS/GPS information from a Waveshare SIM7600 HAT using AT commands.
+This repo is intended to be used as a submodule, and as such has been intentionally stripped down to one purpose: query and return GNSS/GPS information from a Waveshare SIM7600 HAT using AT commands.
 
 ## Features
 
