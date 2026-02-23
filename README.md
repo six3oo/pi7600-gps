@@ -25,8 +25,6 @@ This repo is intended to be used as a submodule, and as such has been intentiona
 
 ## Installation
 
-This module is intentionally minimal.
-
 - Python deps are defined in requirements.txt.
 
 ## Usage
